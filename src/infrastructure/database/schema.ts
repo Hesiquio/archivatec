@@ -1,0 +1,177 @@
+import {
+  pgTable,
+  pgEnum,
+  uuid,
+  varchar,
+  integer,
+  boolean,
+  timestamp,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
+
+// ─── Enums ────────────────────────────────────────────────────────
+
+export const rolEnum = pgEnum('rol', ['ADMIN', 'ARCHIVISTA', 'CONSULTA', 'DIGITALIZADOR'])
+
+export const tipoDocumentoEnum = pgEnum('tipo_documento', [
+  'ACADEMICO', 'ADMINISTRATIVO', 'FINANCIERO', 'PERSONAL',
+])
+
+export const estadoCajaEnum = pgEnum('estado_caja', [
+  'ACTIVA', 'INACTIVA', 'EN_PRESTAMO', 'EN_DIGITALIZACION', 'DADA_DE_BAJA',
+])
+
+export const tipoExpedienteEnum = pgEnum('tipo_expediente', [
+  'ALUMNO', 'DOCENTE', 'ADMINISTRATIVO', 'PROYECTO', 'CONVENIO',
+])
+
+export const estadoExpedienteEnum = pgEnum('estado_expediente', [
+  'ACTIVO', 'CERRADO', 'PRESTADO', 'DIGITALIZADO', 'TRANSFERIDO',
+])
+
+export const estadoPrestamoEnum = pgEnum('estado_prestamo', [
+  'PENDIENTE', 'ACTIVO', 'DEVUELTO', 'VENCIDO',
+])
+
+export const estadoDigitalizacionEnum = pgEnum('estado_digitalizacion', [
+  'EN_PROCESO', 'COMPLETADO', 'FALLIDO', 'VERIFICADO',
+])
+
+export const formatoArchivoEnum = pgEnum('formato_archivo', [
+  'PDF', 'PDF_A', 'TIFF', 'PNG',
+])
+
+// ─── Usuarios ─────────────────────────────────────────────────────
+
+export const usuarios = pgTable('usuarios', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  nombre: varchar('nombre', { length: 200 }).notNull(),
+  email: varchar('email', { length: 200 }).notNull(),
+  passwordHash: varchar('password_hash', { length: 500 }).notNull(),
+  rol: rolEnum('rol').default('CONSULTA').notNull(),
+  activo: boolean('activo').default(true).notNull(),
+  creadoEn: timestamp('creado_en').defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),
+}, (t) => [uniqueIndex('usuarios_email_unique').on(t.email)])
+
+// ─── Ubicaciones Físicas ──────────────────────────────────────────
+
+export const ubicaciones = pgTable('ubicaciones', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  codigo: varchar('codigo', { length: 20 }).notNull(),
+  descripcion: varchar('descripcion', { length: 200 }),
+  salon: varchar('salon', { length: 100 }).notNull(),
+  estante: integer('estante').notNull(),
+  fila: integer('fila').notNull(),
+  columna: integer('columna').notNull(),
+  capacidadMaxima: integer('capacidad_maxima').default(50).notNull(),
+  ocupacionActual: integer('ocupacion_actual').default(0).notNull(),
+  activo: boolean('activo').default(true).notNull(),
+  creadoEn: timestamp('creado_en').defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),
+}, (t) => [uniqueIndex('ubicaciones_codigo_unique').on(t.codigo)])
+
+// ─── Cajas ────────────────────────────────────────────────────────
+
+export const cajas = pgTable('cajas', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  numeroCaja: varchar('numero_caja', { length: 50 }).notNull(),
+  descripcion: text('descripcion'),
+  tipoDocumento: tipoDocumentoEnum('tipo_documento').notNull(),
+  fechaInicio: timestamp('fecha_inicio').notNull(),
+  fechaFin: timestamp('fecha_fin'),
+  ubicacionId: uuid('ubicacion_id').references(() => ubicaciones.id).notNull(),
+  estado: estadoCajaEnum('estado').default('ACTIVA').notNull(),
+  totalExpedientes: integer('total_expedientes').default(0).notNull(),
+  observaciones: text('observaciones'),
+  creadoEn: timestamp('creado_en').defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),
+}, (t) => [uniqueIndex('cajas_numero_unique').on(t.numeroCaja)])
+
+// ─── Expedientes ──────────────────────────────────────────────────
+
+export const expedientes = pgTable('expedientes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  numeroExpediente: varchar('numero_expediente', { length: 100 }).notNull(),
+  nombreTitular: varchar('nombre_titular', { length: 200 }).notNull(),
+  tipoExpediente: tipoExpedienteEnum('tipo_expediente').notNull(),
+  matriculaOEmpleado: varchar('matricula_o_empleado', { length: 50 }),
+  carrera: varchar('carrera', { length: 150 }),
+  fechaIngreso: timestamp('fecha_ingreso').notNull(),
+  fechaCierre: timestamp('fecha_cierre'),
+  cajaId: uuid('caja_id').references(() => cajas.id).notNull(),
+  estado: estadoExpedienteEnum('estado').default('ACTIVO').notNull(),
+  clasificacionAIDLC: varchar('clasificacion_aidlc', { length: 100 }),
+  digitalizadoUrl: varchar('digitalizado_url', { length: 1000 }),
+  observaciones: text('observaciones'),
+  creadoEn: timestamp('creado_en').defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),
+}, (t) => [uniqueIndex('expedientes_numero_unique').on(t.numeroExpediente)])
+
+// ─── Préstamos ────────────────────────────────────────────────────
+
+export const prestamos = pgTable('prestamos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  expedienteId: uuid('expediente_id').references(() => expedientes.id),
+  cajaId: uuid('caja_id').references(() => cajas.id),
+  solicitanteNombre: varchar('solicitante_nombre', { length: 200 }).notNull(),
+  solicitanteMatricula: varchar('solicitante_matricula', { length: 50 }),
+  solicitanteDepartamento: varchar('solicitante_departamento', { length: 200 }).notNull(),
+  motivoPrestamo: text('motivo_prestamo').notNull(),
+  fechaSalida: timestamp('fecha_salida').defaultNow().notNull(),
+  fechaDevolucionEsperada: timestamp('fecha_devolucion_esperada').notNull(),
+  fechaDevolucionReal: timestamp('fecha_devolucion_real'),
+  autorizadoPorId: uuid('autorizado_por_id').references(() => usuarios.id).notNull(),
+  estado: estadoPrestamoEnum('estado').default('ACTIVO').notNull(),
+  observaciones: text('observaciones'),
+  creadoEn: timestamp('creado_en').defaultNow().notNull(),
+})
+
+// ─── Digitalización ───────────────────────────────────────────────
+
+export const digitalizaciones = pgTable('digitalizaciones', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  expedienteId: uuid('expediente_id').references(() => expedientes.id).notNull(),
+  operadorId: uuid('operador_id').references(() => usuarios.id).notNull(),
+  equipoEscaner: varchar('equipo_escaner', { length: 100 }),
+  resolucionDpi: integer('resolucion_dpi').default(300).notNull(),
+  formatoArchivo: formatoArchivoEnum('formato_archivo').default('PDF_A').notNull(),
+  totalPaginas: integer('total_paginas').notNull(),
+  urlArchivo: varchar('url_archivo', { length: 1000 }).notNull(),
+  checksumSha256: varchar('checksum_sha256', { length: 64 }).notNull(),
+  estado: estadoDigitalizacionEnum('estado').default('EN_PROCESO').notNull(),
+  observaciones: text('observaciones'),
+  creadoEn: timestamp('creado_en').defaultNow().notNull(),
+  actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),
+})
+
+// ─── Relaciones ───────────────────────────────────────────────────
+
+export const ubicacionesRelations = relations(ubicaciones, ({ many }) => ({
+  cajas: many(cajas),
+}))
+
+export const cajasRelations = relations(cajas, ({ one, many }) => ({
+  ubicacion: one(ubicaciones, { fields: [cajas.ubicacionId], references: [ubicaciones.id] }),
+  expedientes: many(expedientes),
+  prestamos: many(prestamos),
+}))
+
+export const expedientesRelations = relations(expedientes, ({ one, many }) => ({
+  caja: one(cajas, { fields: [expedientes.cajaId], references: [cajas.id] }),
+  prestamos: many(prestamos),
+  digitalizaciones: many(digitalizaciones),
+}))
+
+export const prestamosRelations = relations(prestamos, ({ one }) => ({
+  expediente: one(expedientes, { fields: [prestamos.expedienteId], references: [expedientes.id] }),
+  caja: one(cajas, { fields: [prestamos.cajaId], references: [cajas.id] }),
+  autorizadoPor: one(usuarios, { fields: [prestamos.autorizadoPorId], references: [usuarios.id] }),
+}))
+
+export const digitalizacionesRelations = relations(digitalizaciones, ({ one }) => ({
+  expediente: one(expedientes, { fields: [digitalizaciones.expedienteId], references: [expedientes.id] }),
+  operador: one(usuarios, { fields: [digitalizaciones.operadorId], references: [usuarios.id] }),
+}))

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Archivística AI-DLC — Sistema de Gestión Documental</title>
+  <meta name="description" content="Sistema de Gestión Documental bajo metodología AI-DLC para el Departamento de Archivística del Instituto Tecnológico." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ─── PANTALLA DE LOGIN ────────────────────────────────────────────── -->
+<div id="login-screen" class="login-screen">
+  <div class="login-bg">
+    <div class="login-orb orb-1"></div>
+    <div class="login-orb orb-2"></div>
+    <div class="login-orb orb-3"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">🏛️</div>
+      <h1>Archivística <span class="badge-aidlc">AI-DLC</span></h1>
+      <p>Sistema de Gestión Documental</p>
+    </div>
+    <form id="login-form" class="login-form">
+      <div class="field-group">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" placeholder="admin@archivistica.edu.mx" required autocomplete="email" />
+      </div>
+      <div class="field-group">
+        <label for="password">Contraseña</label>
+        <div class="input-eye">
+          <input type="password" id="password" placeholder="••••••••••" required autocomplete="current-password" />
+          <button type="button" id="toggle-pw" class="eye-btn" aria-label="Mostrar contraseña">👁</button>
+        </div>
+      </div>
+      <div id="login-error" class="login-error hidden"></div>
+      <button type="submit" id="login-btn" class="btn btn-primary btn-full">
+        <span class="btn-text">Iniciar sesión</span>
+        <span class="btn-loader hidden">⏳</span>
+      </button>
+    </form>
+    <p class="login-hint">Instituto Tecnológico · Departamento de Archivística</p>
+  </div>
+</div>
+
+<!-- ─── DASHBOARD PRINCIPAL ─────────────────────────────────────────── -->
+<div id="app" class="app hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">🏛️</div>
+      <div class="sidebar-title">
+        <span class="sidebar-name">Archivística</span>
+        <span class="sidebar-tag">AI-DLC</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Colapsar menú">‹</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">📊</span><span class="nav-text">Dashboard</span>
+      </a>
+      <div class="nav-section-label">Módulos</div>
+      <a href="#" class="nav-item" data-view="ubicaciones">
+        <span class="nav-icon">📍</span><span class="nav-text">Ubicaciones</span>
+      </a>
+      <a href="#" class="nav-item" data-view="cajas">
+        <span class="nav-icon">📦</span><span class="nav-text">Cajas</span>
+      </a>
+      <a href="#" class="nav-item" data-view="expedientes">
+        <span class="nav-icon">📁</span><span class="nav-text">Expedientes</span>
+      </a>
+      <a href="#" class="nav-item" data-view="prestamos">
+        <span class="nav-icon">📤</span><span class="nav-text">Préstamos</span>
+      </a>
+      <a href="#" class="nav-item" data-view="digitalizacion">
+        <span class="nav-icon">🖨️</span><span class="nav-text">Digitalización</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <span class="user-name" id="user-name-sidebar">—</span>
+          <span class="user-role" id="user-role-sidebar">—</span>
+        </div>
+      </div>
+      <button class="btn-logout" id="logout-btn" title="Cerrar sesión">⏏</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" id="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        <div>
+          <h2 class="topbar-title" id="topbar-title">Dashboard</h2>
+          <p class="topbar-sub" id="topbar-sub">Resumen del sistema</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="status-badge">
+          <span class="status-dot"></span>
+          <span>Sistema activo</span>
+        </div>
+        <div class="user-pill">
+          <div class="user-avatar sm" id="user-avatar-top">A</div>
+          <span id="user-name-top">Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Views -->
+    <div class="view-container" id="view-container">
+
+      <!-- ── DASHBOARD VIEW ── -->
+      <div id="view-dashboard" class="view active">
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card" data-color="blue">
+            <div class="stat-icon">📍</div>
+            <div class="stat-body">
+              <div class="stat-number" id="stat-ubicaciones">—</div>
+              <div class="stat-label">Ubicaciones</div>
+            </div>
+            <div class="stat-trend">Activas</div>
+          </div>
+          <div class="stat-card" data-color="purple">
+            <div class="stat-icon">📦</div>
+            <div class="stat-body">
+              <div class="stat-number" id="stat-cajas">—</div>
+              <div class="stat-label">Cajas registradas</div>
+            </div>
+            <div class="stat-trend">En inventario</div>
+          </div>
+          <div class="stat-card" data-color="green">
+            <div class="stat-icon">📁</div>
+            <div class="stat-body">
+              <div class="stat-number" id="stat-expedientes">—</div>
+              <div class="stat-label">Expedientes</div>
+            </div>
+            <div class="stat-trend">Total indexados</div>
+          </div>
+          <div class="stat-card" data-color="orange">
+            <div class="stat-icon">📤</div>
+            <div class="stat-body">
+              <div class="stat-number" id="stat-prestamos">—</div>
+              <div class="stat-label">Préstamos activos</div>
+            </div>
+            <div class="stat-trend">En circulación</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Préstamos vencidos</h3>
+              <span class="card-badge danger" id="vencidos-count">0</span>
+            </div>
+            <div class="empty-state" id="vencidos-empty">
+              <div class="empty-icon">✅</div>
+              <p>Sin préstamos vencidos</p>
+            </div>
+            <div id="vencidos-list" class="list-items hidden"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Actividad reciente</h3>
+            </div>
+            <div class="activity-feed" id="activity-feed">
+              <div class="activity-item">
+                <span class="activity-icon">🔑</span>
+                <div class="activity-text">
+                  <strong>Sesión iniciada</strong>
+                  <span id="activity-login-time">ahora</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── UBICACIONES VIEW ── -->
+      <div id="view-ubicaciones" class="view hidden">
+        <div class="view-toolbar">
+          <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Buscar por salón..." id="search-ubicaciones" class="search-input" />
+          </div>
+          <button class="btn btn-primary" id="btn-nueva-ubicacion">+ Nueva ubicación</button>
+        </div>
+        <div class="table-card">
+          <table class="data-table" id="table-ubicaciones">
+            <thead>
+              <tr>
+                <th>Código</th><th>Salón</th><th>Estante</th><th>Fila</th><th>Columna</th>
+                <th>Ocupación</th><th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-ubicaciones">
+              <tr><td colspan="7" class="table-loading">Cargando...</td></tr>
+            </tbody>
+          </table>
+          <div class="table-pagination" id="pag-ubicaciones"></div>
+        </div>
+      </div>
+
+      <!-- ── CAJAS VIEW ── -->
+      <div id="view-cajas" class="view hidden">
+        <div class="view-toolbar">
+          <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Buscar caja..." id="search-cajas" class="search-input" />
+          </div>
+          <button class="btn btn-primary" id="btn-nueva-caja">+ Nueva caja</button>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>N° Caja</th><th>Tipo Documento</th><th>Ubicación</th>
+                <th>Expedientes</th><th>Estado</th><th>Fecha Inicio</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-cajas">
+              <tr><td colspan="6" class="table-loading">Cargando...</td></tr>
+            </tbody>
+          </table>
+          <div class="table-pagination" id="pag-cajas"></div>
+        </div>
+      </div>
+
+      <!-- ── EXPEDIENTES VIEW ── -->
+      <div id="view-expedientes" class="view hidden">
+        <div class="view-toolbar">
+          <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Buscar por nombre o número..." id="search-expedientes" class="search-input" />
+          </div>
+          <button class="btn btn-primary" id="btn-nuevo-expediente">+ Nuevo expediente</button>
+        </div>
+        <div class="filter-bar">
+          <select id="filter-tipo-exp" class="filter-select">
+            <option value="">Todos los tipos</option>
+            <option value="ALUMNO">Alumno</option>
+            <option value="DOCENTE">Docente</option>
+            <option value="ADMINISTRATIVO">Administrativo</option>
+            <option value="PROYECTO">Proyecto</option>
+            <option value="CONVENIO">Convenio</option>
+          </select>
+          <select id="filter-estado-exp" class="filter-select">
+            <option value="">Todos los estados</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="CERRADO">Cerrado</option>
+            <option value="PRESTADO">Prestado</option>
+            <option value="DIGITALIZADO">Digitalizado</option>
+          </select>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>N° Expediente</th><th>Titular</th><th>Tipo</th>
+                <th>Carrera/Área</th><th>Estado</th><th>AI-DLC</th><th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-expedientes">
+              <tr><td colspan="7" class="table-loading">Cargando...</td></tr>
+            </tbody>
+          </table>
+          <div class="table-pagination" id="pag-expedientes"></div>
+        </div>
+      </div>
+
+      <!-- ── PRÉSTAMOS VIEW ── -->
+      <div id="view-prestamos" class="view hidden">
+        <div class="view-toolbar">
+          <select id="filter-estado-prest" class="filter-select">
+            <option value="">Todos los estados</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="VENCIDO">Vencido</option>
+            <option value="DEVUELTO">Devuelto</option>
+          </select>
+          <button class="btn btn-primary" id="btn-nuevo-prestamo">+ Nuevo préstamo</button>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Solicitante</th><th>Departamento</th><th>Motivo</th>
+                <th>Salida</th><th>Devolución esperada</th><th>Estado</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-prestamos">
+              <tr><td colspan="7" class="table-loading">Cargando...</td></tr>
+            </tbody>
+          </table>
+          <div class="table-pagination" id="pag-prestamos"></div>
+        </div>
+      </div>
+
+      <!-- ── DIGITALIZACIÓN VIEW ── -->
+      <div id="view-digitalizacion" class="view hidden">
+        <div class="view-toolbar">
+          <select id="filter-estado-dig" class="filter-select">
+            <option value="">Todos los estados</option>
+            <option value="EN_PROCESO">En proceso</option>
+            <option value="COMPLETADO">Completado</option>
+            <option value="VERIFICADO">Verificado</option>
+            <option value="FALLIDO">Fallido</option>
+          </select>
+        </div>
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Expediente ID</th><th>Operador</th><th>Formato</th>
+                <th>Páginas</th><th>DPI</th><th>Estado</th><th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-digitalizacion">
+              <tr><td colspan="7" class="table-loading">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /view-container -->
+  </main>
+</div>
+
+<!-- ─── MODAL GENÉRICO ──────────────────────────────────────────────── -->
+<div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">Modal</h3>
+      <button class="modal-close" id="modal-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- ─── TOAST ────────────────────────────────────────────────────────── -->
+<div id="toast-container" class="toast-container"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
