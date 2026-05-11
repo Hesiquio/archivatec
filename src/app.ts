@@ -4,6 +4,7 @@ import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
 import { prettyJSON } from 'hono/pretty-json'
 import { trimTrailingSlash } from 'hono/trailing-slash'
+import { serveStatic } from 'hono/bun'
 import { env } from './config/env'
 import { errorHandler } from './middleware/errorHandler.middleware'
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware'
@@ -51,6 +52,10 @@ api.route('/ubicaciones', ubicacionRoutes)
 api.route('/cajas', cajaRoutes)
 api.route('/prestamos', prestamoRoutes)
 api.route('/digitalizacion', digitalizacionRoutes)
+
+// ─── Frontend estático desde /public ─────────────────────────────
+app.get('/', serveStatic({ path: './public/index.html' }))
+app.use('/*', serveStatic({ root: './public' }))
 
 // ─── Manejo de errores y rutas no encontradas ─────────────────────
 app.onError(errorHandler)
