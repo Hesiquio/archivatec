@@ -47,11 +47,25 @@ export async function initDatabase() {
       email VARCHAR(200) NOT NULL UNIQUE,
       password_hash VARCHAR(500) NOT NULL,
       rol rol DEFAULT 'CONSULTA' NOT NULL,
+      division VARCHAR(200) DEFAULT '' NOT NULL,
+      crear_usuarios BOOLEAN DEFAULT false NOT NULL,
+      subir_archivos BOOLEAN DEFAULT true NOT NULL,
+      modificar_archivos BOOLEAN DEFAULT true NOT NULL,
+      eliminar_archivos BOOLEAN DEFAULT false NOT NULL,
+      ver_otras_divisiones BOOLEAN DEFAULT false NOT NULL,
       activo BOOLEAN DEFAULT true NOT NULL,
       creado_en TIMESTAMP DEFAULT NOW() NOT NULL,
       actualizado_en TIMESTAMP DEFAULT NOW() NOT NULL
     )
   `)
+
+  // ─ Migraciones para BDs existentes (idempotente) ────────────────────
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN division VARCHAR(200) DEFAULT '' NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN crear_usuarios BOOLEAN DEFAULT false NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN subir_archivos BOOLEAN DEFAULT true NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN modificar_archivos BOOLEAN DEFAULT true NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN eliminar_archivos BOOLEAN DEFAULT false NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN ver_otras_divisiones BOOLEAN DEFAULT false NOT NULL`)
 
   await tryExec(`
     CREATE TABLE ubicaciones (
@@ -160,6 +174,12 @@ export async function initDatabase() {
       email: 'admin@archivistica.edu.mx',
       passwordHash,
       rol: 'ADMIN',
+      division: 'Dirección General',
+      crearUsuarios: true,
+      subirArchivos: true,
+      modificarArchivos: true,
+      eliminarArchivos: true,
+      verOtrasDivisiones: true,
     })
     console.log('👤 Usuario admin creado:')
     console.log('   📧 Email:    admin@archivistica.edu.mx')

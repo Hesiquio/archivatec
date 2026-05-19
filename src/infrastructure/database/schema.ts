@@ -51,6 +51,13 @@ export const usuarios = pgTable('usuarios', {
   email: varchar('email', { length: 200 }).notNull(),
   passwordHash: varchar('password_hash', { length: 500 }).notNull(),
   rol: rolEnum('rol').default('CONSULTA').notNull(),
+  division: varchar('division', { length: 200 }).default('').notNull(),
+  // ── Permisos RBAC granulares ──────────────────────────────────────
+  crearUsuarios:       boolean('crear_usuarios').default(false).notNull(),
+  subirArchivos:       boolean('subir_archivos').default(true).notNull(),
+  modificarArchivos:   boolean('modificar_archivos').default(true).notNull(),
+  eliminarArchivos:    boolean('eliminar_archivos').default(false).notNull(),
+  verOtrasDivisiones:  boolean('ver_otras_divisiones').default(false).notNull(),
   activo: boolean('activo').default(true).notNull(),
   creadoEn: timestamp('creado_en').defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),

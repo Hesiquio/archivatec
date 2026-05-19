@@ -47,6 +47,7 @@ app.get('/health', (c) =>
 const api = app.basePath('/api/v1')
 
 api.route('/auth', authRoutes)
+api.route('/usuarios', authRoutes)   // POST /usuarios usa authRoutes (createUsuario)
 api.route('/expedientes', expedienteRoutes)
 api.route('/ubicaciones', ubicacionRoutes)
 api.route('/cajas', cajaRoutes)
