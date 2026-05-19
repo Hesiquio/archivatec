@@ -176,10 +176,81 @@ export async function initDatabase() {
       eliminarArchivos: true,
       verOtrasDivisiones: true,
     })
-    console.log('👤 Usuario admin creado:')
-    console.log('   📧 Email:    admin@archivistica.edu.mx')
-    console.log('   🔑 Password: Admin@1234!')
-  } else {
-    console.log('👤 Usuario admin ya existe — listo')
+    console.log('👤 Usuario admin creado: admin@archivistica.edu.mx')
+  }
+
+  // ─── Seed: Usuarios Demo para pruebas de RBAC ──────────────────────────────
+  const defaultPass = await Bun.password.hash('Password@123')
+
+  // 1. jgarcia (Administrador)
+  const [existingJGarcia] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.email, 'jgarcia@itse.edu.mx')).limit(1)
+  if (!existingJGarcia) {
+    await db.insert(usuarios).values({
+      nombre: 'Jesús García López',
+      email: 'jgarcia@itse.edu.mx',
+      passwordHash: defaultPass,
+      rol: 'ADMIN',
+      division: 'Dirección General',
+      crearUsuarios: true,
+      subirArchivos: true,
+      modificarArchivos: true,
+      eliminarArchivos: true,
+      verOtrasDivisiones: true,
+    })
+    console.log('👤 Usuario semilla creado: jgarcia@itse.edu.mx (ADMIN)')
+  }
+
+  // 2. rmendez (Gestor de Archivos)
+  const [existingRMendez] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.email, 'rmendez@itse.edu.mx')).limit(1)
+  if (!existingRMendez) {
+    await db.insert(usuarios).values({
+      nombre: 'Rosa Méndez Juárez',
+      email: 'rmendez@itse.edu.mx',
+      passwordHash: defaultPass,
+      rol: 'ARCHIVISTA',
+      division: 'Subdirección de Academia',
+      crearUsuarios: false,
+      subirArchivos: true,
+      modificarArchivos: true,
+      eliminarArchivos: false,
+      verOtrasDivisiones: true,
+    })
+    console.log('👤 Usuario semilla creado: rmendez@itse.edu.mx (Gestor)')
+  }
+
+  // 3. aperez (Usuario de Consulta)
+  const [existingAPerez] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.email, 'aperez@itse.edu.mx')).limit(1)
+  if (!existingAPerez) {
+    await db.insert(usuarios).values({
+      nombre: 'Ana Pérez Castillo',
+      email: 'aperez@itse.edu.mx',
+      passwordHash: defaultPass,
+      rol: 'CONSULTA',
+      division: 'Subdirección de Extensión',
+      crearUsuarios: false,
+      subirArchivos: false,
+      modificarArchivos: false,
+      eliminarArchivos: false,
+      verOtrasDivisiones: true,
+    })
+    console.log('👤 Usuario semilla creado: aperez@itse.edu.mx (Consulta)')
+  }
+
+  // 4. chernandez (Gestor de Archivos)
+  const [existingCHernandez] = await db.select({ id: usuarios.id }).from(usuarios).where(eq(usuarios.email, 'chernandez@itse.edu.mx')).limit(1)
+  if (!existingCHernandez) {
+    await db.insert(usuarios).values({
+      nombre: 'Carlos Hernández Ruiz',
+      email: 'chernandez@itse.edu.mx',
+      passwordHash: defaultPass,
+      rol: 'ARCHIVISTA',
+      division: 'Subdirección de Administración',
+      crearUsuarios: false,
+      subirArchivos: true,
+      modificarArchivos: true,
+      eliminarArchivos: false,
+      verOtrasDivisiones: true,
+    })
+    console.log('👤 Usuario semilla creado: chernandez@itse.edu.mx (Gestor)')
   }
 }

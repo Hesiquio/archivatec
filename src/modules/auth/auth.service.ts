@@ -27,7 +27,8 @@ export interface UsuarioPerfil {
 
 function buildPermisos(u: typeof usuarios.$inferSelect): Permisos {
   // ADMIN siempre tiene todos los permisos independientemente de los flags
-  const isAdmin = u.rol === 'ADMIN'
+  const rolUpper = (u.rol || '').toUpperCase()
+  const isAdmin = rolUpper === 'ADMIN' || rolUpper === 'ADMINISTRADOR'
   return {
     crearUsuarios:      isAdmin || u.crearUsuarios,
     subirArchivos:      isAdmin || u.subirArchivos,
@@ -142,8 +143,16 @@ export class AuthService {
 
     const passwordHash = await Bun.password.hash(data.password)
 
-    // Si tiene crear_usuarios, el rol es ARCHIVISTA mínimo
-    const rol = data.crearUsuarios ? 'ARCHIVISTA' : 'CONSULTA'
+    // Normalizar el rol del string del frontend
+    let rol: 'ADMIN' | 'ARCHIVISTA' | 'CONSULTA' = 'CONSULTA'
+    const inputRol = (data.rol || '').toUpperCase()
+    if (inputRol.includes('ADMIN')) {
+      rol = 'ADMIN'
+    } else if (inputRol.includes('GESTOR') || inputRol.includes('ARCHIVISTA')) {
+      rol = 'ARCHIVISTA'
+    } else {
+      rol = 'CONSULTA'
+    }
 
     const [newUser] = await db
       .insert(usuarios)
@@ -207,7 +216,18 @@ export class AuthService {
     const patch: Record<string, unknown> = {}
     if (data.nombre             !== undefined) patch.nombre            = data.nombre
     if (data.division           !== undefined) patch.division          = data.division
-    if (data.rol                !== undefined) patch.rol               = data.rol
+    if (data.rol !== undefined) {
+      let r: 'ADMIN' | 'ARCHIVISTA' | 'CONSULTA' = 'CONSULTA'
+      const inputRol = (data.rol || '').toUpperCase()
+      if (inputRol.includes('ADMIN')) {
+        r = 'ADMIN'
+      } else if (inputRol.includes('GESTOR') || inputRol.includes('ARCHIVISTA')) {
+        r = 'ARCHIVISTA'
+      } else {
+        r = 'CONSULTA'
+      }
+      patch.rol = r
+    }
     if (data.crearUsuarios      !== undefined) patch.crearUsuarios     = data.crearUsuarios
     if (data.subirArchivos      !== undefined) patch.subirArchivos     = data.subirArchivos
     if (data.modificarArchivos  !== undefined) patch.modificarArchivos = data.modificarArchivos

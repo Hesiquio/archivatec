@@ -134,7 +134,10 @@ document.getElementById('login-form').onsubmit = async e => {
     }
     enterApp()
   } catch (ex) {
-    if (username && password) {
+    if (ex && (ex.status === 401 || ex.status === 422 || ex.status === 403)) {
+      err.textContent = ex.message || 'Usuario o contraseña incorrectos'
+      err.classList.remove('hidden')
+    } else if (username && password) {
       currentUser = { nombre: capitalize(username), rol: 'Administrador', username, division: '' }
       // Modo demo → permisos completos de administrador
       currentPermisos = {
@@ -180,7 +183,8 @@ document.getElementById('logout-btn').onclick = () => {
   currentDivision = ''
   localStorage.removeItem('token')
   // Limpiar badge si quedó del usuario anterior
-  document.getElementById('rbac-badge')?.remove()
+  const bContainer = document.getElementById('topbar-user-badge-container')
+  if (bContainer) bContainer.innerHTML = ''
   document.getElementById('app').classList.add('hidden')
   document.getElementById('login-screen').classList.remove('hidden')
 }
@@ -225,11 +229,27 @@ async function enterApp() {
     }
     currentDivision = currentUser.division || ''
   }
-  // 3º) Fallback de seguridad: usuario sin datos de permisos → acceso mínimo
+  // 3º) Cargar desde el mapa de ROLES_PERMISOS de acuerdo al nombre de rol
+  else if (currentUser?.rol) {
+    const rolActual = currentUser.rol
+    let key = 'Usuario de Consulta'
+    if (rolActual.toLowerCase().includes('admin')) {
+      key = 'Administrador'
+    } else if (rolActual.toLowerCase().includes('gestor') || rolActual.toLowerCase().includes('archivista')) {
+      key = 'Gestor de Archivos'
+    }
+    const mapa = ROLES_PERMISOS[key]
+    currentPermisos = mapa ? { ...mapa } : {
+      crearUsuarios: false, subirArchivos: false,
+      modificarArchivos: false, eliminarArchivos: false, verOtrasDivisiones: true
+    }
+    currentDivision = currentUser.division || ''
+  }
+  // 4º) Fallback definitivo de seguridad: acceso mínimo de consulta
   else {
     currentPermisos = {
-      crearUsuarios: false, subirArchivos: true,
-      modificarArchivos: true, eliminarArchivos: false, verOtrasDivisiones: false,
+      crearUsuarios: false, subirArchivos: false,
+      modificarArchivos: false, eliminarArchivos: false, verOtrasDivisiones: true,
     }
     currentDivision = currentUser?.division || ''
   }
@@ -270,20 +290,65 @@ function applyRBAC() {
     }
   }
 
-  // ── Badge de usuario limitado en topbar ──────────────────────
-  let badge = document.getElementById('rbac-badge')
-  const isLimited = !p.crearUsuarios || !p.eliminarArchivos || !p.verOtrasDivisiones
-  if (isLimited) {
-    if (!badge) {
-      badge = document.createElement('span')
-      badge.id = 'rbac-badge'
-      badge.className = 'rbac-badge'
-      badge.title = 'Perfil con acceso restringido'
-      badge.textContent = '🔒 Acceso limitado'
-      document.querySelector('.topbar-left')?.appendChild(badge)
+  // ── Pestaña de usuarios en Configuración ──────────────────────
+  const tabUsuarios = document.getElementById('cfg-tab-usuarios')
+  if (tabUsuarios) {
+    if (p.crearUsuarios) {
+      tabUsuarios.style.display = ''
+      tabUsuarios.removeAttribute('aria-hidden')
+    } else {
+      tabUsuarios.style.display = 'none'
+      tabUsuarios.setAttribute('aria-hidden', 'true')
     }
-  } else {
-    badge?.remove()
+  }
+
+  // ── Badge de usuario interactivo en topbar (Rol y permisos granulares) ──
+  const badgeContainer = document.getElementById('topbar-user-badge-container')
+  const profileWidget = document.getElementById('topbar-user-profile-widget')
+  if (badgeContainer && profileWidget) {
+    const rolActual = currentUser?.rol || 'Usuario de Consulta'
+    const chipClass = rolToChipClass(rolActual)
+    const emoji = rolEmoji(chipClass)
+    
+    // Inyectar sólo el chip en el contenedor del badge
+    badgeContainer.innerHTML = `<span class="rol-chip ${chipClass}">${emoji} ${rolActual}</span>`
+    
+    // Remover tooltip existente en el widget para no duplicarlo
+    const oldTooltip = profileWidget.querySelector('.topbar-permissions-tooltip')
+    if (oldTooltip) oldTooltip.remove()
+    
+    // Crear e inyectar el nuevo tooltip flotante
+    const tooltip = document.createElement('div')
+    tooltip.className = 'topbar-permissions-tooltip'
+    tooltip.innerHTML = `
+      <div class="tooltip-title">Permisos Granulares</div>
+      <div class="tooltip-perm-item">
+        <span class="tooltip-perm-icon">👥</span>
+        <span class="tooltip-perm-label">Creación de usuarios</span>
+        <span class="tooltip-perm-status ${p.crearUsuarios ? 'active' : 'inactive'}">${p.crearUsuarios ? 'Sí' : 'No'}</span>
+      </div>
+      <div class="tooltip-perm-item">
+        <span class="tooltip-perm-icon">📤</span>
+        <span class="tooltip-perm-label">Subir archivos</span>
+        <span class="tooltip-perm-status ${p.subirArchivos ? 'active' : 'inactive'}">${p.subirArchivos ? 'Sí' : 'No'}</span>
+      </div>
+      <div class="tooltip-perm-item">
+        <span class="tooltip-perm-icon">✏️</span>
+        <span class="tooltip-perm-label">Modificar archivos</span>
+        <span class="tooltip-perm-status ${p.modificarArchivos ? 'active' : 'inactive'}">${p.modificarArchivos ? 'Sí' : 'No'}</span>
+      </div>
+      <div class="tooltip-perm-item">
+        <span class="tooltip-perm-icon">🗑️</span>
+        <span class="tooltip-perm-label">Eliminar archivos</span>
+        <span class="tooltip-perm-status ${p.eliminarArchivos ? 'active' : 'inactive'}">${p.eliminarArchivos ? 'Sí' : 'No'}</span>
+      </div>
+      <div class="tooltip-perm-item">
+        <span class="tooltip-perm-icon">👁️</span>
+        <span class="tooltip-perm-label">Ver otras divisiones</span>
+        <span class="tooltip-perm-status ${p.verOtrasDivisiones ? 'active' : 'inactive'}">${p.verOtrasDivisiones ? 'Sí' : 'No'}</span>
+      </div>
+    `
+    profileWidget.appendChild(tooltip)
   }
 }
 
@@ -1039,8 +1104,13 @@ async function loadUsuariosAdmin() {
   try {
     const res = await api('GET', '/usuarios')
     _usuariosCache = res.data || []
-  } catch {
-    // Modo demo: usar datos de muestra
+  } catch (err) {
+    if (err && (err.status === 403 || err.status === 401)) {
+      toast('No tienes permiso para administrar usuarios', 'error')
+      tbody.innerHTML = '<tr><td colspan="5" class="table-empty">❌ Acceso denegado</td></tr>'
+      return
+    }
+    // Modo demo: usar datos de muestra (sólo si no es un error de autorización)
     _usuariosCache = DEMO_USUARIOS.map(u => ({ ...u }))
   }
 

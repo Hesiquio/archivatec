@@ -10,9 +10,17 @@
 - 📦 **Control de Inventario**: Gestión de cajas y ubicaciones físicas (estantes, filas, columnas).
 - 🤝 **Sistema de Préstamos**: Seguimiento riguroso de la salida y devolución de documentos.
 - 📸 **Digitalización**: Módulo para registrar procesos de escaneo con verificación de integridad (SHA-256).
-- 🔐 **Seguridad Robusta**: Autenticación JWT y control de acceso basado en roles (RBAC).
+- 🔐 **Seguridad y RBAC Granular**:
+  - Control de acceso basado en roles con 5 permisos individuales (`crearUsuarios`, `subirArchivos`, `modificarArchivos`, `eliminarArchivos`, `verOtrasDivisiones`).
+  - Autenticación JWT robusta.
+  - **Widget de Estado RBAC en Topbar**: Un chip interactivo que muestra el Rol en el encabezado junto al nombre de bienvenida y despliega un panel flotante (*tooltip glassmorphism*) detallando el estado de activación de cada uno de tus permisos específicos.
+- 👥 **Módulo de Administración de Usuarios**:
+  - Pestaña de administración técnica unificada y segura en Configuración.
+  - Creación dinámica con autocompletado inteligente de permisos según el Rol seleccionado (ajustables manualmente).
+  - Edición completa de datos y **actualización de contraseñas de usuarios por administradores**.
+  - Eliminación segura con modales de confirmación institucionales.
 - 📑 **Documentación Automática**: Swagger UI integrado para pruebas rápidas de la API.
-- 💾 **Base de Datos Flexible**: Soporte nativo para PostgreSQL y PGlite (PostgreSQL embebido para desarrollo rápido).
+- 💾 **Base de Datos Embebida Zero-Config**: Configuración robusta e idempotente basada en **PGlite** para entornos de desarrollo sin dependencias de sistemas externos.
 
 ---
 
@@ -22,10 +30,11 @@
 - **Backend**: [Hono](https://hono.dev/) (Ultrafast web framework)
 - **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
 - **Base de Datos**: 
-  - **PGlite** (Para desarrollo local sin dependencias externas)
+  - **PGlite** (Para desarrollo local rápido y embebido)
   - **PostgreSQL** (Para producción)
 - **Validación**: [Zod](https://zod.dev/)
 - **Documentación**: Swagger / OpenAPI
+- **Frontend**: Vanilla JS, HTML5, CSS3 Custom Properties (Diseño técnico responsivo con paleta institucional Guinda)
 
 ---
 
@@ -55,16 +64,11 @@ cp .env.example .env
 > 1. `JWT_SECRET` tenga al menos **32 caracteres**.
 > 2. `DATABASE_URL` contenga la palabra `localhost` si deseas usar la base de datos embebida (PGlite).
 
-### 4. Inicializar la Base de Datos
-El sistema está diseñado para inicializarse automáticamente al arrancar, pero puedes generar las migraciones de Drizzle si realizas cambios en el esquema:
-```bash
-bun run db:generate
-```
-
-### 5. Iniciar el Servidor
+### 4. Iniciar el Servidor (Desarrollo)
 ```bash
 bun run dev
 ```
+Al arrancar, el sistema inicializa automáticamente la base de datos de forma idempotente, creando el directorio `./data`, activando la extensión `pgcrypto` en la BD PGlite y creando las tablas en caso de que no existan.
 
 ---
 
@@ -77,19 +81,21 @@ archivatec/
 │   ├── application/    # Lógica de negocio (Servicios)
 │   ├── domain/         # Entidades y tipos
 │   ├── infrastructure/ # Base de datos, Repositorios, Config
+│   │   └── database/   # Esquemas Drizzle (schema.ts), PGlite Client, Migraciones
 │   └── config/         # Variables de entorno
-├── data/               # Base de datos local (PGlite)
+├── public/             # Archivos frontend (HTML, CSS premium, JS reactivo)
+├── data/               # Directorio persistido de la base de datos (PGlite)
 ├── storage/            # Almacenamiento de archivos digitalizados
-└── index.ts            # Punto de entrada de la aplicación
+└── index.ts            # Punto de entrada de la aplicación (arranque e inicialización)
 ```
 
 ---
 
 ## 🔑 Credenciales por Defecto
 
-Al iniciar el servidor por primera vez, se crea un usuario administrador:
+Al iniciar el servidor por primera vez, se crea un usuario administrador por defecto si no existe ninguno:
 
-- **Email**: `admin@archivistica.edu.mx`
+- **Email**: `admin@archivistica.edu.mx` (Usuario: `admin`)
 - **Password**: `Admin@1234!`
 
 ---
@@ -101,14 +107,17 @@ Una vez que el servidor esté corriendo, puedes acceder a la documentación inte
 
 ---
 
-## 🛠️ Solución de Problemas (¿Por qué no funciona?)
+## 🛠️ Solución de Problemas (Troubleshooting)
 
-Si el proyecto no arranca, verifica lo siguiente:
-
-1. **Error en Variables de Entorno**: El servidor fallará inmediatamente si falta alguna variable en el `.env`. Revisa la consola para ver qué campo de `Zod` está fallando.
-2. **JWT Secret corto**: Asegúrate de que `JWT_SECRET` sea una cadena larga y segura.
-3. **Permisos de Carpeta**: Verifica que el proceso tenga permisos para escribir en `./data` y `./storage`.
-4. **Puerto ocupado**: Si el puerto 3000 está en uso, cámbialo en el `.env`.
+1. **Error en Inicialización de PGlite (RuntimeError: Aborted)**:
+   - *Causa*: El esquema intenta usar tipos `ENUM` nativos de Postgres, los cuales no son soportados por el motor de PGlite.
+   - *Solución*: En Archivatec se migró todo el esquema a tipos `VARCHAR` con tipado estricto literal en TypeScript (`.$type<LiteralUnion>`). No uses `pgEnum` al ampliar el esquema.
+   - *Causa 2*: Falta la extensión `pgcrypto` para el generador `gen_random_uuid()`.
+   - *Solución*: El cliente PGlite está configurado para ejecutar `CREATE EXTENSION IF NOT EXISTS pgcrypto` al arrancar.
+2. **Error de Carpeta Inexistente (ENOENT en data/archivistica.db)**:
+   - *Solución*: Asegúrate de que el backend cree el directorio `./data` recursivamente antes de instanciar PGlite. Esto ya está automatizado en `client.ts`. Si es necesario, créalo manualmente con `mkdir data`.
+3. **JWT Secret Corto**:
+   - Asegúrate de que tu `JWT_SECRET` en el `.env` tenga suficiente entropía (mínimo 32 caracteres).
 
 ---
 
