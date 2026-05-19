@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import { sign } from 'hono/jwt'
 import { HTTPException } from 'hono/http-exception'
 import { env } from '../../config/env'
-import type { LoginDTO, RegisterDTO, CreateUsuarioDTO } from './auth.schema'
+import type { LoginDTO, RegisterDTO, CreateUsuarioDTO, UpdateUsuarioDTO } from './auth.schema'
 
 // ── Tipo de permisos que se expone al frontend ─────────────────────────────
 export interface Permisos {
@@ -191,6 +191,54 @@ export class AuthService {
       creadoEn: user.creadoEn,
       permisos: buildPermisos(user),
     } satisfies UsuarioPerfil & { creadoEn: Date }
+  }
+  async updateUsuario(id: string, data: UpdateUsuarioDTO) {
+    const [existing] = await db
+      .select({ id: usuarios.id })
+      .from(usuarios)
+      .where(eq(usuarios.id, id))
+      .limit(1)
+
+    if (!existing) {
+      throw new HTTPException(404, { message: 'Usuario no encontrado' })
+    }
+
+    // Construir sólo los campos presentes en el payload
+    const patch: Record<string, unknown> = {}
+    if (data.nombre             !== undefined) patch.nombre            = data.nombre
+    if (data.division           !== undefined) patch.division          = data.division
+    if (data.rol                !== undefined) patch.rol               = data.rol
+    if (data.crearUsuarios      !== undefined) patch.crearUsuarios     = data.crearUsuarios
+    if (data.subirArchivos      !== undefined) patch.subirArchivos     = data.subirArchivos
+    if (data.modificarArchivos  !== undefined) patch.modificarArchivos = data.modificarArchivos
+    if (data.eliminarArchivos   !== undefined) patch.eliminarArchivos  = data.eliminarArchivos
+    if (data.verOtrasDivisiones !== undefined) patch.verOtrasDivisiones = data.verOtrasDivisiones
+
+    // Hash de la nueva contraseña si se provee
+    if (data.nuevaPassword) {
+      patch.passwordHash = await Bun.password.hash(data.nuevaPassword)
+    }
+
+    if (Object.keys(patch).length === 0) {
+      throw new HTTPException(400, { message: 'No se proporcionaron campos para actualizar' })
+    }
+
+    patch.actualizadoEn = new Date()
+
+    const [updated] = await db
+      .update(usuarios)
+      .set(patch as any)
+      .where(eq(usuarios.id, id))
+      .returning()
+
+    return {
+      id: updated!.id,
+      nombre: updated!.nombre,
+      email: updated!.email,
+      rol: updated!.rol,
+      division: updated!.division,
+      permisos: buildPermisos(updated!),
+    }
   }
 }
 

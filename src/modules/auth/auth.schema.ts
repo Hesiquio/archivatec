@@ -31,6 +31,20 @@ export const CreateUsuarioSchema = z.object({
   verOtrasDivisiones: z.boolean().default(false),
 })
 
-export type LoginDTO = z.infer<typeof LoginSchema>
-export type RegisterDTO = z.infer<typeof RegisterSchema>
+// Schema para PATCH /usuarios/:id (editar usuario existente)
+export const UpdateUsuarioSchema = z.object({
+  nombre:             z.string().min(2).max(200).optional(),
+  division:           z.string().max(200).optional(),
+  rol:                z.string().max(50).optional(),
+  crearUsuarios:      z.boolean().optional(),
+  subirArchivos:      z.boolean().optional(),
+  modificarArchivos:  z.boolean().optional(),
+  eliminarArchivos:   z.boolean().optional(),
+  verOtrasDivisiones: z.boolean().optional(),
+  nuevaPassword:      z.string().min(6, 'Mínimo 6 caracteres').max(100).optional(),
+})
+
+export type LoginDTO         = z.infer<typeof LoginSchema>
+export type RegisterDTO      = z.infer<typeof RegisterSchema>
 export type CreateUsuarioDTO = z.infer<typeof CreateUsuarioSchema>
+export type UpdateUsuarioDTO = z.infer<typeof UpdateUsuarioSchema>

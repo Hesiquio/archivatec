@@ -29,24 +29,19 @@ async function tryExec(statement: string) {
 export async function initDatabase() {
   console.log('🔧 Inicializando base de datos...')
 
-  // ─── Enums ────────────────────────────────────────────────────────────────
-  await tryExec(`CREATE TYPE rol AS ENUM ('ADMIN', 'ARCHIVISTA', 'CONSULTA', 'DIGITALIZADOR')`)
-  await tryExec(`CREATE TYPE tipo_documento AS ENUM ('ACADEMICO', 'ADMINISTRATIVO', 'FINANCIERO', 'PERSONAL')`)
-  await tryExec(`CREATE TYPE estado_caja AS ENUM ('ACTIVA', 'INACTIVA', 'EN_PRESTAMO', 'EN_DIGITALIZACION', 'DADA_DE_BAJA')`)
-  await tryExec(`CREATE TYPE tipo_expediente AS ENUM ('ALUMNO', 'DOCENTE', 'ADMINISTRATIVO', 'PROYECTO', 'CONVENIO')`)
-  await tryExec(`CREATE TYPE estado_expediente AS ENUM ('ACTIVO', 'CERRADO', 'PRESTADO', 'DIGITALIZADO', 'TRANSFERIDO')`)
-  await tryExec(`CREATE TYPE estado_prestamo AS ENUM ('PENDIENTE', 'ACTIVO', 'DEVUELTO', 'VENCIDO')`)
-  await tryExec(`CREATE TYPE estado_digitalizacion AS ENUM ('EN_PROCESO', 'COMPLETADO', 'FALLIDO', 'VERIFICADO')`)
-  await tryExec(`CREATE TYPE formato_archivo AS ENUM ('PDF', 'PDF_A', 'TIFF', 'PNG')`)
+  // ─── Nota: PGlite no soporta CREATE TYPE AS ENUM ─────────────────────────
+  // Se usan VARCHAR(50) directamente en las tablas. El tipado TypeScript
+  // se conserva con .$type<> en el schema de Drizzle (schema.ts).
 
   // ─── Tablas ───────────────────────────────────────────────────────────────
-  await tryExec(`
-    CREATE TABLE usuarios (
+  // IF NOT EXISTS evita que PGlite colapse con Aborted() al re-ejecutar
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS usuarios (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       nombre VARCHAR(200) NOT NULL,
       email VARCHAR(200) NOT NULL UNIQUE,
       password_hash VARCHAR(500) NOT NULL,
-      rol rol DEFAULT 'CONSULTA' NOT NULL,
+      rol VARCHAR(50) DEFAULT 'CONSULTA' NOT NULL,
       division VARCHAR(200) DEFAULT '' NOT NULL,
       crear_usuarios BOOLEAN DEFAULT false NOT NULL,
       subir_archivos BOOLEAN DEFAULT true NOT NULL,
@@ -57,18 +52,18 @@ export async function initDatabase() {
       creado_en TIMESTAMP DEFAULT NOW() NOT NULL,
       actualizado_en TIMESTAMP DEFAULT NOW() NOT NULL
     )
-  `)
+  `))
 
-  // ─ Migraciones para BDs existentes (idempotente) ────────────────────
-  await tryExec(`ALTER TABLE usuarios ADD COLUMN division VARCHAR(200) DEFAULT '' NOT NULL`)
-  await tryExec(`ALTER TABLE usuarios ADD COLUMN crear_usuarios BOOLEAN DEFAULT false NOT NULL`)
-  await tryExec(`ALTER TABLE usuarios ADD COLUMN subir_archivos BOOLEAN DEFAULT true NOT NULL`)
-  await tryExec(`ALTER TABLE usuarios ADD COLUMN modificar_archivos BOOLEAN DEFAULT true NOT NULL`)
-  await tryExec(`ALTER TABLE usuarios ADD COLUMN eliminar_archivos BOOLEAN DEFAULT false NOT NULL`)
-  await tryExec(`ALTER TABLE usuarios ADD COLUMN ver_otras_divisiones BOOLEAN DEFAULT false NOT NULL`)
+  // ─ Migraciones idempotentes para columnas nuevas en BDs existentes ───
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS division VARCHAR(200) DEFAULT '' NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS crear_usuarios BOOLEAN DEFAULT false NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS subir_archivos BOOLEAN DEFAULT true NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modificar_archivos BOOLEAN DEFAULT true NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS eliminar_archivos BOOLEAN DEFAULT false NOT NULL`)
+  await tryExec(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ver_otras_divisiones BOOLEAN DEFAULT false NOT NULL`)
 
-  await tryExec(`
-    CREATE TABLE ubicaciones (
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS ubicaciones (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       codigo VARCHAR(20) NOT NULL UNIQUE,
       descripcion VARCHAR(200),
@@ -82,47 +77,47 @@ export async function initDatabase() {
       creado_en TIMESTAMP DEFAULT NOW() NOT NULL,
       actualizado_en TIMESTAMP DEFAULT NOW() NOT NULL
     )
-  `)
+  `))
 
-  await tryExec(`
-    CREATE TABLE cajas (
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS cajas (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       numero_caja VARCHAR(50) NOT NULL UNIQUE,
       descripcion TEXT,
-      tipo_documento tipo_documento NOT NULL,
+      tipo_documento VARCHAR(50) NOT NULL,
       fecha_inicio TIMESTAMP NOT NULL,
       fecha_fin TIMESTAMP,
       ubicacion_id UUID REFERENCES ubicaciones(id) NOT NULL,
-      estado estado_caja DEFAULT 'ACTIVA' NOT NULL,
+      estado VARCHAR(50) DEFAULT 'ACTIVA' NOT NULL,
       total_expedientes INTEGER DEFAULT 0 NOT NULL,
       observaciones TEXT,
       creado_en TIMESTAMP DEFAULT NOW() NOT NULL,
       actualizado_en TIMESTAMP DEFAULT NOW() NOT NULL
     )
-  `)
+  `))
 
-  await tryExec(`
-    CREATE TABLE expedientes (
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS expedientes (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       numero_expediente VARCHAR(100) NOT NULL UNIQUE,
       nombre_titular VARCHAR(200) NOT NULL,
-      tipo_expediente tipo_expediente NOT NULL,
+      tipo_expediente VARCHAR(50) NOT NULL,
       matricula_o_empleado VARCHAR(50),
       carrera VARCHAR(150),
       fecha_ingreso TIMESTAMP NOT NULL,
       fecha_cierre TIMESTAMP,
       caja_id UUID REFERENCES cajas(id) NOT NULL,
-      estado estado_expediente DEFAULT 'ACTIVO' NOT NULL,
+      estado VARCHAR(50) DEFAULT 'ACTIVO' NOT NULL,
       clasificacion_aidlc VARCHAR(100),
       digitalizado_url VARCHAR(1000),
       observaciones TEXT,
       creado_en TIMESTAMP DEFAULT NOW() NOT NULL,
       actualizado_en TIMESTAMP DEFAULT NOW() NOT NULL
     )
-  `)
+  `))
 
-  await tryExec(`
-    CREATE TABLE prestamos (
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS prestamos (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       expediente_id UUID REFERENCES expedientes(id),
       caja_id UUID REFERENCES cajas(id),
@@ -134,29 +129,29 @@ export async function initDatabase() {
       fecha_devolucion_esperada TIMESTAMP NOT NULL,
       fecha_devolucion_real TIMESTAMP,
       autorizado_por_id UUID REFERENCES usuarios(id) NOT NULL,
-      estado estado_prestamo DEFAULT 'ACTIVO' NOT NULL,
+      estado VARCHAR(50) DEFAULT 'ACTIVO' NOT NULL,
       observaciones TEXT,
       creado_en TIMESTAMP DEFAULT NOW() NOT NULL
     )
-  `)
+  `))
 
-  await tryExec(`
-    CREATE TABLE digitalizaciones (
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS digitalizaciones (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       expediente_id UUID REFERENCES expedientes(id) NOT NULL,
       operador_id UUID REFERENCES usuarios(id) NOT NULL,
       equipo_escaner VARCHAR(100),
       resolucion_dpi INTEGER DEFAULT 300 NOT NULL,
-      formato_archivo formato_archivo DEFAULT 'PDF_A' NOT NULL,
+      formato_archivo VARCHAR(20) DEFAULT 'PDF_A' NOT NULL,
       total_paginas INTEGER NOT NULL,
       url_archivo VARCHAR(1000) NOT NULL,
       checksum_sha256 VARCHAR(64) NOT NULL,
-      estado estado_digitalizacion DEFAULT 'EN_PROCESO' NOT NULL,
+      estado VARCHAR(50) DEFAULT 'EN_PROCESO' NOT NULL,
       observaciones TEXT,
       creado_en TIMESTAMP DEFAULT NOW() NOT NULL,
       actualizado_en TIMESTAMP DEFAULT NOW() NOT NULL
     )
-  `)
+  `))
 
   console.log('✅ Esquema de base de datos listo')
 

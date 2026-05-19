@@ -816,24 +816,17 @@ const ROLES_PERMISOS = {
 }
 
 /**
- * Aplica el mapa de permisos de un rol a los checkboxes del modal.
- * Se ejecuta cada vez que el <select> de Rol cambia.
- * No bloquea la edición manual posterior del usuario.
- * @param {string} rol - Nombre del rol seleccionado (clave de ROLES_PERMISOS)
+ * Abre el modal de creación de un nuevo usuario.
+ * Se invoca desde el botón '+ Nuevo Usuario' en la tabla de administración.
+ * Reutiliza el mapeo ROLES_PERMISOS para autocompletar los checkboxes.
  */
-function aplicarPermisosDeRol(rol) {
-  const mapa = ROLES_PERMISOS[rol]
-  if (!mapa) return
+function openNuevoUsuarioModal() {
+  if (!currentPermisos.crearUsuarios) {
+    toast('No tienes permiso para crear usuarios', 'error')
+    return
+  }
 
-  document.getElementById('perm-crear-usuarios').checked      = mapa.crearUsuarios
-  document.getElementById('perm-subir-archivos').checked      = mapa.subirArchivos
-  document.getElementById('perm-modificar-archivos').checked  = mapa.modificarArchivos
-  document.getElementById('perm-eliminar-archivos').checked   = mapa.eliminarArchivos
-  document.getElementById('perm-ver-otras-divisiones').checked = mapa.verOtrasDivisiones
-}
-
-document.getElementById('btn-config-usuarios').onclick = () => {
-  openModal('Creación de Usuarios', `
+  openModal('➕ Nuevo Usuario', `
     <div class="field-group">
       <label>División / Departamento</label>
       <input id="m-division" placeholder="Ej. Subdirección de Academia" />
@@ -870,31 +863,29 @@ document.getElementById('btn-config-usuarios').onclick = () => {
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-purple" id="btn-save-user">Crear Usuario</button>`)
 
-  // ── Evento onChange del selector de Rol ──────────────────────
-  // Al cambiar el rol se autocompleatan los checkboxes según ROLES_PERMISOS.
-  // El usuario puede ajustar cualquier checkbox manualmente después.
+  // onChange del Rol → autocompletado de checkboxes
   document.getElementById('m-rol').addEventListener('change', function () {
-    aplicarPermisosDeRol(this.value)
+    const mapa = ROLES_PERMISOS[this.value]
+    if (!mapa) return
+    document.getElementById('perm-crear-usuarios').checked       = mapa.crearUsuarios
+    document.getElementById('perm-subir-archivos').checked       = mapa.subirArchivos
+    document.getElementById('perm-modificar-archivos').checked   = mapa.modificarArchivos
+    document.getElementById('perm-eliminar-archivos').checked    = mapa.eliminarArchivos
+    document.getElementById('perm-ver-otras-divisiones').checked = mapa.verOtrasDivisiones
   })
 
-  // ── Guardar usuario ──────────────────────────────────────────
-  // Se leen los estados INDIVIDUALES de cada checkbox (no solo el nombre del rol),
-  // garantizando que las modificaciones manuales posteriores al autocompletado
-  // se envíen fielmente al backend y a la validación del menú lateral.
   document.getElementById('btn-save-user').onclick = async () => {
-    const username  = document.getElementById('m-username').value.trim()
-    const pass      = document.getElementById('m-pass').value
-    const nombre    = document.getElementById('m-encargado').value.trim()
-    const division  = document.getElementById('m-division').value.trim()
-    const rol       = document.getElementById('m-rol').value
+    const username = document.getElementById('m-username').value.trim()
+    const pass     = document.getElementById('m-pass').value
+    const nombre   = document.getElementById('m-encargado').value.trim()
+    const division = document.getElementById('m-division').value.trim()
+    const rol      = document.getElementById('m-rol').value
 
     if (!username || !pass || !nombre) {
       toast('Completa los campos obligatorios (nombre, usuario y contraseña)', 'error')
       return
     }
 
-    // Leer los 5 checkboxes individualmente — no se usa el rol como fuente de verdad,
-    // así se respetan los ajustes manuales hechos por el administrador.
     const permisos = {
       crearUsuarios:      document.getElementById('perm-crear-usuarios').checked,
       subirArchivos:      document.getElementById('perm-subir-archivos').checked,
@@ -904,9 +895,10 @@ document.getElementById('btn-config-usuarios').onclick = () => {
     }
 
     try {
-      // Se envía el rol como referencia semántica + los 5 booleanos de permisos
-      // para que el backend pueda validar ambos niveles (rol y permiso granular).
       await api('POST', '/usuarios', { username, password: pass, nombre, division, rol, ...permisos })
+      // Agregar al caché local y refrescar tabla sin recargar del servidor
+      _usuariosCache.push({ username, nombre, division, rol, permisos })
+      renderUsuariosAdmin(_usuariosCache)
       closeModal()
       toast(`Usuario "${nombre}" creado correctamente`, 'success')
     } catch (err) {
@@ -916,8 +908,11 @@ document.getElementById('btn-config-usuarios').onclick = () => {
         toast('No tienes permiso para crear usuarios', 'error')
         closeModal()
       } else {
+        // Modo demo: agregar al caché local
+        _usuariosCache.push({ id: `demo-${Date.now()}`, username, nombre, division, rol, permisos })
+        renderUsuariosAdmin(_usuariosCache)
         closeModal()
-        toast('Usuario guardado (modo demo)', 'success')
+        toast(`Usuario "${nombre}" creado (modo demo)`, 'success')
       }
     }
   }
@@ -1153,6 +1148,20 @@ function openEditUsuarioModal(idx) {
              style="background:#f8fafc;color:var(--gray-600);cursor:not-allowed;" />
     </div>
     <div class="field-group">
+      <label>Nueva contraseña <small style="font-weight:400;opacity:.65">— dejar en blanco para no cambiar</small></label>
+      <div style="position:relative;">
+        <input type="password" id="eu-nueva-pass" placeholder="Mínimo 6 caracteres"
+               style="padding-right:36px;" />
+        <button type="button" onclick="
+          const f=document.getElementById('eu-nueva-pass');
+          f.type=f.type==='password'?'text':'password';
+          this.textContent=f.type==='password'?'👁️':'🙈';
+        " style="position:absolute;right:8px;top:50%;transform:translateY(-50%);
+                 background:none;border:none;cursor:pointer;font-size:14px;padding:0;
+                 line-height:1;">👁️</button>
+      </div>
+    </div>
+    <div class="field-group">
       <label>Rol</label>
       <select id="eu-rol">
         <option value="">— Sin rol definido —</option>
@@ -1201,12 +1210,17 @@ function openEditUsuarioModal(idx) {
 
   // Guardar cambios del usuario editado
   document.getElementById('btn-save-edit-user').onclick = async () => {
-    const nombre   = document.getElementById('eu-nombre').value.trim()
-    const division = document.getElementById('eu-division').value.trim()
-    const rol      = document.getElementById('eu-rol').value
+    const nombre      = document.getElementById('eu-nombre').value.trim()
+    const division    = document.getElementById('eu-division').value.trim()
+    const rol         = document.getElementById('eu-rol').value
+    const nuevaPass   = document.getElementById('eu-nueva-pass').value
 
     if (!nombre) {
       toast('El nombre del encargado es obligatorio', 'error')
+      return
+    }
+    if (nuevaPass && nuevaPass.length < 6) {
+      toast('La contraseña debe tener al menos 6 caracteres', 'error')
       return
     }
 
@@ -1219,14 +1233,20 @@ function openEditUsuarioModal(idx) {
       verOtrasDivisiones: document.getElementById('eu-perm-ver-otras-divisiones').checked,
     }
 
+    const payload = { nombre, division, rol, ...permisos }
+    if (nuevaPass) payload.nuevaPassword = nuevaPass
+
     try {
       const uid = u.id || u._id || u.username
-      await api('PATCH', `/usuarios/${uid}`, { nombre, division, rol, ...permisos })
+      await api('PATCH', `/usuarios/${uid}`, payload)
       // Actualizar caché local
       _usuariosCache[idx] = { ...u, nombre, division, rol, permisos }
       renderUsuariosAdmin(_usuariosCache)
       closeModal()
-      toast(`Permisos de "${u.username}" actualizados correctamente`, 'success')
+      const msg = nuevaPass
+        ? `Datos y contraseña de "${u.username}" actualizados` 
+        : `Permisos de "${u.username}" actualizados correctamente`
+      toast(msg, 'success')
     } catch (err) {
       if (err?.status === 403) {
         toast('No tienes permiso para editar usuarios', 'error')
@@ -1236,7 +1256,8 @@ function openEditUsuarioModal(idx) {
         _usuariosCache[idx] = { ...u, nombre, division, rol, permisos }
         renderUsuariosAdmin(_usuariosCache)
         closeModal()
-        toast(`Cambios guardados (modo demo)`, 'success')
+        const msg = nuevaPass ? 'Contraseña actualizada (modo demo)' : 'Cambios guardados (modo demo)'
+        toast(msg, 'success')
       }
     }
   }

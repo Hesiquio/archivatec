@@ -1,6 +1,5 @@
 import {
   pgTable,
-  pgEnum,
   uuid,
   varchar,
   integer,
@@ -11,37 +10,18 @@ import {
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
-// ─── Enums ────────────────────────────────────────────────────────
+// ─── Tipos de enum simulados con varchar ─────────────────────────
+// PGlite (PostgreSQL en WASM) no soporta CREATE TYPE ... AS ENUM.
+// Usamos varchar con .$type<> para conservar el tipado TypeScript.
 
-export const rolEnum = pgEnum('rol', ['ADMIN', 'ARCHIVISTA', 'CONSULTA', 'DIGITALIZADOR'])
-
-export const tipoDocumentoEnum = pgEnum('tipo_documento', [
-  'ACADEMICO', 'ADMINISTRATIVO', 'FINANCIERO', 'PERSONAL',
-])
-
-export const estadoCajaEnum = pgEnum('estado_caja', [
-  'ACTIVA', 'INACTIVA', 'EN_PRESTAMO', 'EN_DIGITALIZACION', 'DADA_DE_BAJA',
-])
-
-export const tipoExpedienteEnum = pgEnum('tipo_expediente', [
-  'ALUMNO', 'DOCENTE', 'ADMINISTRATIVO', 'PROYECTO', 'CONVENIO',
-])
-
-export const estadoExpedienteEnum = pgEnum('estado_expediente', [
-  'ACTIVO', 'CERRADO', 'PRESTADO', 'DIGITALIZADO', 'TRANSFERIDO',
-])
-
-export const estadoPrestamoEnum = pgEnum('estado_prestamo', [
-  'PENDIENTE', 'ACTIVO', 'DEVUELTO', 'VENCIDO',
-])
-
-export const estadoDigitalizacionEnum = pgEnum('estado_digitalizacion', [
-  'EN_PROCESO', 'COMPLETADO', 'FALLIDO', 'VERIFICADO',
-])
-
-export const formatoArchivoEnum = pgEnum('formato_archivo', [
-  'PDF', 'PDF_A', 'TIFF', 'PNG',
-])
+type RolEnum             = 'ADMIN' | 'ARCHIVISTA' | 'CONSULTA' | 'DIGITALIZADOR'
+type TipoDocumentoEnum   = 'ACADEMICO' | 'ADMINISTRATIVO' | 'FINANCIERO' | 'PERSONAL'
+type EstadoCajaEnum      = 'ACTIVA' | 'INACTIVA' | 'EN_PRESTAMO' | 'EN_DIGITALIZACION' | 'DADA_DE_BAJA'
+type TipoExpedienteEnum  = 'ALUMNO' | 'DOCENTE' | 'ADMINISTRATIVO' | 'PROYECTO' | 'CONVENIO'
+type EstadoExpedienteEnum= 'ACTIVO' | 'CERRADO' | 'PRESTADO' | 'DIGITALIZADO' | 'TRANSFERIDO'
+type EstadoPrestamoEnum  = 'PENDIENTE' | 'ACTIVO' | 'DEVUELTO' | 'VENCIDO'
+type EstadoDigEnum       = 'EN_PROCESO' | 'COMPLETADO' | 'FALLIDO' | 'VERIFICADO'
+type FormatoArchivoEnum  = 'PDF' | 'PDF_A' | 'TIFF' | 'PNG'
 
 // ─── Usuarios ─────────────────────────────────────────────────────
 
@@ -50,7 +30,7 @@ export const usuarios = pgTable('usuarios', {
   nombre: varchar('nombre', { length: 200 }).notNull(),
   email: varchar('email', { length: 200 }).notNull(),
   passwordHash: varchar('password_hash', { length: 500 }).notNull(),
-  rol: rolEnum('rol').default('CONSULTA').notNull(),
+  rol: varchar('rol', { length: 50 }).$type<RolEnum>().default('CONSULTA').notNull(),
   division: varchar('division', { length: 200 }).default('').notNull(),
   // ── Permisos RBAC granulares ──────────────────────────────────────
   crearUsuarios:       boolean('crear_usuarios').default(false).notNull(),
@@ -86,11 +66,11 @@ export const cajas = pgTable('cajas', {
   id: uuid('id').primaryKey().defaultRandom(),
   numeroCaja: varchar('numero_caja', { length: 50 }).notNull(),
   descripcion: text('descripcion'),
-  tipoDocumento: tipoDocumentoEnum('tipo_documento').notNull(),
+  tipoDocumento: varchar('tipo_documento', { length: 50 }).$type<TipoDocumentoEnum>().notNull(),
   fechaInicio: timestamp('fecha_inicio').notNull(),
   fechaFin: timestamp('fecha_fin'),
   ubicacionId: uuid('ubicacion_id').references(() => ubicaciones.id).notNull(),
-  estado: estadoCajaEnum('estado').default('ACTIVA').notNull(),
+  estado: varchar('estado', { length: 50 }).$type<EstadoCajaEnum>().default('ACTIVA').notNull(),
   totalExpedientes: integer('total_expedientes').default(0).notNull(),
   observaciones: text('observaciones'),
   creadoEn: timestamp('creado_en').defaultNow().notNull(),
@@ -103,13 +83,13 @@ export const expedientes = pgTable('expedientes', {
   id: uuid('id').primaryKey().defaultRandom(),
   numeroExpediente: varchar('numero_expediente', { length: 100 }).notNull(),
   nombreTitular: varchar('nombre_titular', { length: 200 }).notNull(),
-  tipoExpediente: tipoExpedienteEnum('tipo_expediente').notNull(),
+  tipoExpediente: varchar('tipo_expediente', { length: 50 }).$type<TipoExpedienteEnum>().notNull(),
   matriculaOEmpleado: varchar('matricula_o_empleado', { length: 50 }),
   carrera: varchar('carrera', { length: 150 }),
   fechaIngreso: timestamp('fecha_ingreso').notNull(),
   fechaCierre: timestamp('fecha_cierre'),
   cajaId: uuid('caja_id').references(() => cajas.id).notNull(),
-  estado: estadoExpedienteEnum('estado').default('ACTIVO').notNull(),
+  estado: varchar('estado', { length: 50 }).$type<EstadoExpedienteEnum>().default('ACTIVO').notNull(),
   clasificacionAIDLC: varchar('clasificacion_aidlc', { length: 100 }),
   digitalizadoUrl: varchar('digitalizado_url', { length: 1000 }),
   observaciones: text('observaciones'),
@@ -131,7 +111,7 @@ export const prestamos = pgTable('prestamos', {
   fechaDevolucionEsperada: timestamp('fecha_devolucion_esperada').notNull(),
   fechaDevolucionReal: timestamp('fecha_devolucion_real'),
   autorizadoPorId: uuid('autorizado_por_id').references(() => usuarios.id).notNull(),
-  estado: estadoPrestamoEnum('estado').default('ACTIVO').notNull(),
+  estado: varchar('estado', { length: 50 }).$type<EstadoPrestamoEnum>().default('ACTIVO').notNull(),
   observaciones: text('observaciones'),
   creadoEn: timestamp('creado_en').defaultNow().notNull(),
 })
@@ -144,11 +124,11 @@ export const digitalizaciones = pgTable('digitalizaciones', {
   operadorId: uuid('operador_id').references(() => usuarios.id).notNull(),
   equipoEscaner: varchar('equipo_escaner', { length: 100 }),
   resolucionDpi: integer('resolucion_dpi').default(300).notNull(),
-  formatoArchivo: formatoArchivoEnum('formato_archivo').default('PDF_A').notNull(),
+  formatoArchivo: varchar('formato_archivo', { length: 20 }).$type<FormatoArchivoEnum>().default('PDF_A').notNull(),
   totalPaginas: integer('total_paginas').notNull(),
   urlArchivo: varchar('url_archivo', { length: 1000 }).notNull(),
   checksumSha256: varchar('checksum_sha256', { length: 64 }).notNull(),
-  estado: estadoDigitalizacionEnum('estado').default('EN_PROCESO').notNull(),
+  estado: varchar('estado', { length: 50 }).$type<EstadoDigEnum>().default('EN_PROCESO').notNull(),
   observaciones: text('observaciones'),
   creadoEn: timestamp('creado_en').defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),
