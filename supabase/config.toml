@@ -1,0 +1,15 @@
+project_id = "qnsbcyyprgzlapjnynpf"
+
+[api]
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+shadow_port = 54320
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
