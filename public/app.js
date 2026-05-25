@@ -960,25 +960,43 @@ function openNuevoUsuarioModal() {
     }
 
     try {
-      await api('POST', '/usuarios', { username, password: pass, nombre, division, rol, ...permisos })
-      // Agregar al caché local y refrescar tabla sin recargar del servidor
-      _usuariosCache.push({ username, nombre, division, rol, permisos })
-      renderUsuariosAdmin(_usuariosCache)
+      const response = await fetch('/api/usuarios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          username,
+          password: pass,
+          nombre,
+          division,
+          rol,
+          ...permisos,
+        }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          toast('Ese nombre de usuario ya existe', 'error')
+          return
+        }
+        if (response.status === 403) {
+          toast('No tienes permiso para crear usuarios', 'error')
+          closeModal()
+          return
+        }
+        throw new Error(payload.error || 'Error al guardar el usuario')
+      }
+
+      await loadUsuariosAdmin()
       closeModal()
       toast(`Usuario "${nombre}" creado correctamente`, 'success')
     } catch (err) {
-      if (err?.status === 409) {
-        toast('Ese nombre de usuario ya existe', 'error')
-      } else if (err?.status === 403) {
-        toast('No tienes permiso para crear usuarios', 'error')
-        closeModal()
-      } else {
-        // Modo demo: agregar al caché local
-        _usuariosCache.push({ id: `demo-${Date.now()}`, username, nombre, division, rol, permisos })
-        renderUsuariosAdmin(_usuariosCache)
-        closeModal()
-        toast(`Usuario "${nombre}" creado (modo demo)`, 'success')
-      }
+      console.error(err)
+      toast('No se pudo guardar el usuario en el servidor', 'error')
     }
   }
 }
