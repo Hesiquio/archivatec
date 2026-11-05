@@ -581,9 +581,22 @@ document.getElementById('sidebar-toggle-mobile').onclick = () => {
 }
 
 // ─── INICIO (DASHBOARD) ──────────────────────────────────────
-function loadInicio() {
-  document.getElementById('metric-registros').textContent = YEARS.length
+async function loadInicio() {
+  const totalRegistros = document.getElementById('metric-registros')
+  totalRegistros.textContent = '...'
   document.getElementById('metric-anio').textContent = new Date().getFullYear()
+
+  try {
+    const response = await fetch('/api/v1/estadisticas/total-documentos')
+    const result = await response.json()
+    if (!response.ok || !Number.isInteger(result.data?.total)) {
+      throw new Error(result.error || 'Respuesta inválida al consultar documentos')
+    }
+    totalRegistros.textContent = result.data.total
+  } catch (error) {
+    console.error('No se pudo cargar el total de documentos:', error)
+    totalRegistros.textContent = '—'
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

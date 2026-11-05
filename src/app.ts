@@ -24,6 +24,7 @@ import { digitalizacionRoutes } from './modules/digitalizacion/digitalizacion.ro
 import { usuariosRoutes } from './modules/usuarios/usuarios.routes'
 import { actividadRoutes } from './modules/actividades/actividad.routes'
 import { seriesDocumentalesRoutes } from './modules/series-documentales/series-documental.routes'
+import { estadisticasRoutes } from './modules/estadisticas/estadisticas.routes'
 
 const app = new Hono()
 
@@ -83,6 +84,7 @@ apiRoutes.route('/prestamos', prestamoRoutes)
 apiRoutes.route('/digitalizacion', digitalizacionRoutes)
 apiRoutes.route('/actividades', actividadRoutes)
 apiRoutes.route('/series-documentales', seriesDocumentalesRoutes)
+apiRoutes.route('/estadisticas', estadisticasRoutes)
 
 // Montar en ambos para evitar 404s
 app.route('/api', apiRoutes)
