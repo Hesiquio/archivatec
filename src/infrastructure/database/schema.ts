@@ -148,10 +148,10 @@ export const seriesDocumentales = pgTable('series_documentales', {
   nombre: varchar('nombre', { length: 200 }).notNull(),
   categoria: varchar('categoria', { length: 20 }).$type<CategoriaSerieEnum>().notNull(),
   codigoPadre: varchar('codigo_padre', { length: 30 }),
-  encargadoId: uuid('encargado_id').references(() => usuarios.id),
+  encargadoId: uuid('encargado_id').references(() => usuarios.id, { onDelete: 'set null' }),
   fechaCreacion: timestamp('fecha_creacion'),
   fechaVencimiento: timestamp('fecha_vencimiento'),
-  creadoPorId: uuid('creado_por_id').references(() => usuarios.id),
+  creadoPorId: uuid('creado_por_id').references(() => usuarios.id, { onDelete: 'set null' }),
   creadoEn: timestamp('creado_en').defaultNow().notNull(),
   actualizadoEn: timestamp('actualizado_en').defaultNow().notNull(),
 }, (t) => [uniqueIndex('series_documentales_codigo_unique').on(t.codigo)])

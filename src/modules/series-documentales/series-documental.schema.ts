@@ -5,12 +5,19 @@ export const CategoriaSerieSchema = z.enum(['sustantivas', 'comunes'])
 export const SerieDocumentalSchema = z.object({
   codigo: z
     .string()
+    .trim()
     .min(1)
     .max(30)
     .regex(/^[A-Za-z0-9.\-]+$/, 'Solo letras, números, puntos y guiones'),
-  nombre: z.string().min(1).max(200),
+  nombre: z.string().trim().min(1).max(200),
   categoria: CategoriaSerieSchema,
-  codigoPadre: z.string().max(30).optional().nullable(),
+  codigoPadre: z
+    .string()
+    .trim()
+    .max(30)
+    .regex(/^[A-Za-z0-9.\-]+$/, 'Código de carpeta padre inválido')
+    .optional()
+    .nullable(),
   // No usa z.string().uuid(): los usuarios sembrados por defecto en
   // migrate.ts tienen IDs con formato UUID pero sin nibble de versión
   // válido (ej. "00000000-0000-0000-0000-000000000001"), que .uuid()
@@ -22,6 +29,7 @@ export const SerieDocumentalSchema = z.object({
 
 export const SerieDocumentalQuerySchema = z.object({
   categoria: CategoriaSerieSchema.optional(),
+  buscar: z.string().trim().max(200).optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(200).default(100),
 })
@@ -29,7 +37,7 @@ export const SerieDocumentalQuerySchema = z.object({
 // Solo campos de metadata — código, categoría y carpeta padre son fijos al
 // crear (cambiarlos movería el nodo dentro del árbol de Registros).
 export const SerieDocumentalUpdateSchema = z.object({
-  nombre: z.string().min(1).max(200).optional(),
+  nombre: z.string().trim().min(1).max(200).optional(),
   encargadoId: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, 'ID de usuario inválido').optional().nullable(),
   fechaCreacion: z.coerce.date().optional(),
   fechaVencimiento: z.coerce.date().optional(),

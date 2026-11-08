@@ -1,0 +1,140 @@
+{
+  "planHash": "e3a83bf2a7ae9faa14834e1e38d9ff78a44b3ac9987c017dc63e22674cd133d3",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-11-05T18:00:14.7648024Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 0,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "bun-build-api",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "Bundled 345 modules in 75ms\r\n\r\n  index.js  1.66 MB  (entry point)\r\n\r\n",
+        "durationMs": 152
+      },
+      {
+        "name": "typescript-typecheck",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "",
+        "durationMs": 3037
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "bun test v1.3.13 (bf2e2cec)\r\n\r\nsrc\\modules\\estadisticas\\estadisticas.routes.test.ts:\r\n(pass) returns the total number of digitalized documents [16.00ms]\r\n\r\n 1 pass\r\n 0 fail\r\n 4 expect() calls\r\nRan 1 test across 1 file. [76.00ms]\r\n",
+        "durationMs": 252,
+        "testResults": {
+          "testFramework": "unknown",
+          "runnerDetectedFrom": "none",
+          "testsTotal": 0,
+          "testsPassed": 0,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": true
+        }
+      }
+    ],
+    "executions": [
+      {
+        "source": "bun-build-api",
+        "resolvedExecutable": "C:\\Users\\maler\\.bun\\bin\\bun.EXE",
+        "args": [
+          "build",
+          "api/index.ts",
+          "--target=bun",
+          "--outdir",
+          ".temp\\runtime-validation-bun-build"
+        ],
+        "cwd": "C:\\var\\archivatec",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32",
+        "nodeExecutable": null,
+        "nodeVersion": null,
+        "packageManager": null,
+        "packageManagerExecutable": null,
+        "packageManagerVersion": null,
+        "cleanup": {
+          "RootProcessId": 12556,
+          "Completed": true,
+          "ProcessesObserved": 2,
+          "ProcessesTerminated": 0,
+          "Failure": null
+        }
+      },
+      {
+        "source": "typescript-typecheck",
+        "resolvedExecutable": "C:\\Users\\maler\\.bun\\bin\\bun.EXE",
+        "args": [
+          "node_modules\\typescript\\bin\\tsc",
+          "--noEmit",
+          "--module",
+          "preserve",
+          "--moduleResolution",
+          "bundler"
+        ],
+        "cwd": "C:\\var\\archivatec",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32",
+        "nodeExecutable": null,
+        "nodeVersion": null,
+        "packageManager": null,
+        "packageManagerExecutable": null,
+        "packageManagerVersion": null,
+        "cleanup": {
+          "RootProcessId": 17236,
+          "Completed": true,
+          "ProcessesObserved": 2,
+          "ProcessesTerminated": 0,
+          "Failure": null
+        }
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Users\\maler\\.bun\\bin\\bun.EXE",
+        "args": [
+          "test"
+        ],
+        "cwd": "C:\\var\\archivatec",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32",
+        "nodeExecutable": null,
+        "nodeVersion": null,
+        "packageManager": null,
+        "packageManagerExecutable": null,
+        "packageManagerVersion": null,
+        "cleanup": {
+          "RootProcessId": 21684,
+          "Completed": true,
+          "ProcessesObserved": 2,
+          "ProcessesTerminated": 0,
+          "Failure": null
+        }
+      }
+    ]
+  }
+}

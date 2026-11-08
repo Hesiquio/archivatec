@@ -1,6 +1,9 @@
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import { env } from '../config/env'
+import { db } from '../infrastructure/database/client'
+import { usuarios } from '../infrastructure/database/schema'
+import { eq } from 'drizzle-orm'
 import type { Permisos } from '../modules/auth/auth.service'
 
 export interface JwtPayload {
@@ -9,8 +12,8 @@ export interface JwtPayload {
   rol: string
   division?: string
   permisos?: Permisos
-  iat: number
-  exp: number
+  iat?: number
+  exp?: number
 }
 
 declare module 'hono' {
@@ -73,12 +76,59 @@ export const authMiddleware = createMiddleware(async (c, next) => {
   const token = authHeader.replace('Bearer ', '')
 
   try {
-    const payload = await verifyJwt(token, env.JWT_SECRET)
+    let payload: JwtPayload
+    try {
+      payload = await verifyJwt(token, env.JWT_SECRET)
+    } catch (jwtError) {
+      if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+        throw jwtError
+      }
+
+      const response = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          apikey: env.SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Token inválido o expirado')
+      }
+
+      const authUser = await response.json() as { id?: string; email?: string }
+      if (!authUser.id) {
+        throw new Error('Token sin usuario válido')
+      }
+
+      const [profile] = await db
+        .select()
+        .from(usuarios)
+        .where(eq(usuarios.id, authUser.id))
+        .limit(1)
+
+      if (!profile || !profile.activo) {
+        throw new Error('Usuario no encontrado o inactivo')
+      }
+
+      const isAdmin = profile.rol === 'ADMIN'
+      payload = {
+        sub: profile.id,
+        email: profile.email || authUser.email || '',
+        rol: profile.rol,
+        division: profile.division,
+        permisos: {
+          crearUsuarios: isAdmin || profile.crearUsuarios,
+          subirArchivos: isAdmin || profile.subirArchivos,
+          modificarArchivos: isAdmin || profile.modificarArchivos,
+          eliminarArchivos: isAdmin || profile.eliminarArchivos,
+          verOtrasDivisiones: isAdmin || profile.verOtrasDivisiones,
+        },
+      }
+    }
+
     c.set('user', payload)
     await next()
   } catch {
     throw new HTTPException(401, { message: 'Token inválido o expirado' })
   }
 })
-
-

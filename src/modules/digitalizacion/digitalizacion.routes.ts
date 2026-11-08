@@ -14,6 +14,7 @@ import { requireRole } from '../../middleware/rbac.middleware'
 import { HTTPException } from 'hono/http-exception'
 
 import { storageService } from '../../infrastructure/storage/supabase-storage'
+import { sanitizeStorageFileName } from '../../infrastructure/storage/file-name'
 import { env } from '../../config/env'
 
 export const digitalizacionRoutes = new Hono()
@@ -61,7 +62,7 @@ digitalizacionRoutes.post('/upload/:expedienteId', requireRole('DIGITALIZADOR', 
       return c.json({ success: false, error: 'El archivo no puede superar 4MB' }, 400)
     }
 
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`
+    const fileName = `${Date.now()}-${sanitizeStorageFileName(file.name)}`
     const filePath = `digitalizados/${fileName}`
     
     // 1. Subida a Storage

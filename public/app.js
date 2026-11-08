@@ -171,8 +171,14 @@ function mergeSerieEnArbol(serie) {
 
 async function fetchYFusionarSeriesDinamicas() {
   try {
-    const res = await api('GET', '/series-documentales?limit=200')
-    ;(res.data || []).forEach(mergeSerieEnArbol)
+    let page = 1
+    let totalPages = 1
+    do {
+      const res = await api('GET', `/series-documentales?limit=200&page=${page}`)
+      ;(res.data || []).forEach(mergeSerieEnArbol)
+      totalPages = res.meta?.totalPages || 1
+      page += 1
+    } while (page <= totalPages)
     _seriesDinamicasCargadas = true
   } catch (err) {
     console.error('No se pudieron cargar las series documentales dinámicas:', err)
@@ -681,7 +687,7 @@ function renderBreadcrumb() {
   // Nodos de path
   navState.path.forEach((node, idx) => {
     const captured = idx
-    crumbs.push({ label: `${node.code} ${node.name}`, onclick: () => {
+    crumbs.push({ label: `${node.code} ${escapeHtml(node.name)}`, onclick: () => {
       navState.path = navState.path.slice(0, captured + 1)
       renderView()
     }})
@@ -865,7 +871,7 @@ function renderFolderChildren(container, node) {
 
     container.innerHTML = `
       <div class="section-header">
-        <h3 class="section-title">${node.code} ${node.name}</h3>
+        <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
       </div>
       <div class="terminal-folder">
         <div class="terminal-folder-icon">📄</div>
@@ -873,7 +879,7 @@ function renderFolderChildren(container, node) {
         <p class="terminal-folder-sub">Aquí se almacenan los documentos de esta serie documental.</p>
         <div class="terminal-folder-meta">
           <span class="terminal-chip">📂 Serie: <strong>${node.code}</strong></span>
-          <span class="terminal-chip">🗂 ${node.name}</span>
+          <span class="terminal-chip">🗂 ${escapeHtml(node.name)}</span>
         </div>
         
         <div class="pdf-management-section" style="width: 100%;">
@@ -894,7 +900,7 @@ function renderFolderChildren(container, node) {
 
   container.innerHTML = `
     <div class="section-header">
-      <h3 class="section-title">${node.code} ${node.name}</h3>
+      <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
     </div>
     <div class="folder-list">
       ${node.children.map(child => folderItemHTML(child)).join('')}
@@ -911,7 +917,7 @@ function folderItemHTML(node) {
             onclick="openFolder('${node.code.replace(/'/g, "\\'")}', '${node.name.replace(/'/g, "\\'")}', ${hasChildren})">
       <span class="folder-row-icon">${icon}</span>
       <span class="folder-row-code">${node.code}</span>
-      <span class="folder-row-name">${node.name}</span>
+      <span class="folder-row-name">${escapeHtml(node.name)}</span>
       ${arrow}
     </button>`
 }
@@ -1283,7 +1289,7 @@ function construirOpcionesCarpetaPadre(nodes, depth = 0) {
   let html = ''
   for (const node of nodes) {
     const prefix = '    '.repeat(depth)
-    html += `<option value="${node.code}">${prefix}${node.code} — ${node.name}</option>`
+    html += `<option value="${escapeHtml(node.code)}">${prefix}${escapeHtml(node.code)} — ${escapeHtml(node.name)}</option>`
     if (node.children && node.children.length) html += construirOpcionesCarpetaPadre(node.children, depth + 1)
   }
   return html
@@ -1301,28 +1307,34 @@ function poblarSelectCarpetaPadre(categoria) {
 // de Usuarios, mismo permiso que ya protege crear series).
 async function poblarSelectEncargadoSerie(selectId = 'm-serie-encargado') {
   const sel = document.getElementById(selectId)
-  if (!sel) return
+  if (!sel) return false
   sel.innerHTML = `<option value="">Cargando usuarios...</option>`
   try {
     const res = await api('GET', '/usuarios')
     const lista = res.data || []
     sel.innerHTML =
       `<option value="">— Sin encargado asignado —</option>` +
-      lista.map(u => `<option value="${u.id}">${u.nombre} — ${u.rol}</option>`).join('')
-  } catch {
+      lista.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.nombre)} — ${escapeHtml(u.rol)}</option>`).join('')
+    return true
+  } catch (error) {
     sel.innerHTML = `<option value="">— No se pudo cargar la lista de usuarios —</option>`
+    console.error('No se pudo cargar la lista de encargados:', error)
+    toast('No se pudo cargar la lista de encargados', 'error')
+    return false
   }
 }
 
-document.getElementById('btn-config-series').onclick = () => {
+document.getElementById('btn-config-series').onclick = async () => {
+  if (!_seriesDinamicasCargadas) await fetchYFusionarSeriesDinamicas()
+
   openModal('Creación de Series Documentales', `
     <div class="field-group">
       <label>Nombre de la serie</label>
-      <input id="m-serie-nombre" placeholder="Ej. Actas de Junta Directiva" />
+      <input id="m-serie-nombre" maxlength="200" required placeholder="Ej. Actas de Junta Directiva" />
     </div>
     <div class="field-group">
       <label>Código de la serie</label>
-      <input id="m-codigo" placeholder="Ej. 1S.15" />
+      <input id="m-codigo" maxlength="30" required pattern="[A-Za-z0-9.-]+" placeholder="Ej. 1S.15" />
     </div>
     <div class="field-group">
       <label>Categoría</label>
@@ -1359,7 +1371,7 @@ document.getElementById('btn-config-series').onclick = () => {
   poblarSelectCarpetaPadre('sustantivas')
   document.getElementById('m-serie-categoria').onchange = e => poblarSelectCarpetaPadre(e.target.value)
 
-  poblarSelectEncargadoSerie()
+  await poblarSelectEncargadoSerie()
   document.getElementById('m-serie-encargado').onchange = e => {
     const preview = document.getElementById('m-serie-encargado-preview')
     const opt = e.target.selectedOptions[0]
@@ -1371,8 +1383,8 @@ document.getElementById('btn-config-series').onclick = () => {
       <div class="detail-encargado-card">
         <div class="detail-avatar">${inicial}</div>
         <div class="detail-encargado-info">
-          <div class="detail-encargado-name">${nombreSel}</div>
-          <div class="detail-encargado-div">${rolSel}</div>
+          <div class="detail-encargado-name">${escapeHtml(nombreSel)}</div>
+          <div class="detail-encargado-div">${escapeHtml(rolSel)}</div>
         </div>
       </div>`
   }
@@ -1383,13 +1395,15 @@ document.getElementById('btn-config-series').onclick = () => {
     const categoria = document.getElementById('m-serie-categoria').value
     const codigoPadre = document.getElementById('m-serie-padre').value || null
 
-    if (!nombre) { toast('Ingresa el nombre de la serie', 'error'); return }
-    if (!codigo) { toast('Ingresa el código de la serie', 'error'); return }
+    if (!nombre || nombre.length > 200) { toast('Ingresa un nombre de serie válido (máximo 200 caracteres)', 'error'); return }
+    if (!/^[A-Za-z0-9.-]{1,30}$/.test(codigo)) {
+      toast('El código solo puede contener letras, números, puntos y guiones (máximo 30 caracteres)', 'error')
+      return
+    }
+    if (!['sustantivas', 'comunes'].includes(categoria)) { toast('Selecciona una categoría válida', 'error'); return }
 
-    // Validación best-effort en cliente contra TODO el árbol ya fusionado
-    // (estático + dinámico). El backend solo puede garantizar unicidad
-    // contra series dinámicas — el catálogo estático de ~150 nodos solo
-    // existe en este archivo (catalog.js).
+    // El catálogo estático solo existe en el cliente; el backend valida la
+    // unicidad de series guardadas y la categoría de padres dinámicos.
     const choque = buscarNodoPorCodigo([...FUNCIONES_SUSTANTIVAS, ...FUNCIONES_COMUNES], codigo)
     if (choque) { toast(`El código "${codigo}" ya está en uso por "${choque.name}"`, 'error'); return }
 
@@ -1399,7 +1413,7 @@ document.getElementById('btn-config-series').onclick = () => {
         codigo,
         categoria,
         codigoPadre,
-        encargadoId: document.getElementById('m-serie-encargado').value || undefined,
+        encargadoId: document.getElementById('m-serie-encargado').value || null,
         fechaCreacion: document.getElementById('m-fcreacion').value || undefined,
         fechaVencimiento: document.getElementById('m-fvencimiento').value || undefined,
       })
@@ -1407,7 +1421,8 @@ document.getElementById('btn-config-series').onclick = () => {
       closeModal()
       toast('Serie documental creada', 'success')
       if (navState.year) renderView()
-      loadSeriesAdmin()
+      _seriesAdminPagina = 1
+      await loadSeriesAdmin()
     } catch (err) {
       console.error(err)
       if (err && err.status === 403) {
@@ -1426,17 +1441,35 @@ let _seriesAdminFiltro = ''
 let _seriesAdminFiltroCategoria = ''
 let _seriesAdminPagina = 1
 let _seriesAdminPorPagina = 8
+let _seriesAdminMeta = { total: 0, totalPages: 1 }
+let _seriesAdminRequest = 0
+let _seriesAdminBuscarTimer
 
 async function loadSeriesAdmin() {
   const tbody = document.getElementById('tbody-series-admin')
   if (!tbody) return
+  const requestId = ++_seriesAdminRequest
   tbody.innerHTML = '<tr><td colspan="6" class="table-empty">⏳ Cargando series documentales...</td></tr>'
 
   try {
-    const res = await api('GET', '/series-documentales?limit=200')
+    const params = new URLSearchParams({
+      page: String(_seriesAdminPagina),
+      limit: String(_seriesAdminPorPagina),
+    })
+    if (_seriesAdminFiltroCategoria) params.set('categoria', _seriesAdminFiltroCategoria)
+    if (_seriesAdminFiltro.trim()) params.set('buscar', _seriesAdminFiltro.trim())
+    const res = await api('GET', `/series-documentales?${params}`)
+    if (requestId !== _seriesAdminRequest) return
     _seriesAdminCache = res.data || []
+    _seriesAdminMeta = res.meta || { total: _seriesAdminCache.length, totalPages: 1 }
+    if (_seriesAdminPagina > Math.max(1, _seriesAdminMeta.totalPages)) {
+      _seriesAdminPagina = Math.max(1, _seriesAdminMeta.totalPages)
+      await loadSeriesAdmin()
+      return
+    }
     renderSeriesAdminTable()
   } catch (err) {
+    if (requestId !== _seriesAdminRequest) return
     if (err && (err.status === 403 || err.status === 401)) {
       tbody.innerHTML = '<tr><td colspan="6" class="table-empty">No tienes permiso para ver esta lista</td></tr>'
     } else {
@@ -1445,34 +1478,31 @@ async function loadSeriesAdmin() {
   }
 }
 
-function filtrarSeriesAdmin(rows, filtro, categoria) {
-  const q = filtro.trim().toLowerCase()
-  return rows.filter(s => {
-    if (categoria && s.categoria !== categoria) return false
-    if (!q) return true
-    return (
-      (s.codigo || '').toLowerCase().includes(q) ||
-      (s.nombre || '').toLowerCase().includes(q) ||
-      (s.encargadoNombre || '').toLowerCase().includes(q)
-    )
-  })
-}
-
 function cambiarPaginaSeriesAdmin(pagina) {
   _seriesAdminPagina = pagina
-  renderSeriesAdminTable()
+  loadSeriesAdmin()
 }
 
 function cambiarPorPaginaSeriesAdmin(n) {
   _seriesAdminPorPagina = Number(n)
   _seriesAdminPagina = 1
-  renderSeriesAdminTable()
+  loadSeriesAdmin()
 }
 
 function cambiarFiltroCategoriaSeriesAdmin(categoria) {
   _seriesAdminFiltroCategoria = categoria
   _seriesAdminPagina = 1
-  renderSeriesAdminTable()
+  loadSeriesAdmin()
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[char])
 }
 
 function renderSeriesAdminTable() {
@@ -1480,27 +1510,22 @@ function renderSeriesAdminTable() {
   const paginacion = document.getElementById('paginacion-series-admin')
   if (!tbody) return
 
-  if (!_seriesAdminCache.length) {
+  if (!_seriesAdminMeta.total) {
     tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Sin series documentales creadas todavía</td></tr>'
     if (paginacion) paginacion.innerHTML = ''
     return
   }
 
-  const filtradas = filtrarSeriesAdmin(_seriesAdminCache, _seriesAdminFiltro, _seriesAdminFiltroCategoria)
-  if (!filtradas.length) {
+  if (!_seriesAdminCache.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Ninguna serie coincide con el filtro</td></tr>'
     if (paginacion) paginacion.innerHTML = ''
     return
   }
 
-  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / _seriesAdminPorPagina))
-  if (_seriesAdminPagina > totalPaginas) _seriesAdminPagina = totalPaginas
-  if (_seriesAdminPagina < 1) _seriesAdminPagina = 1
-
+  const totalPaginas = Math.max(1, _seriesAdminMeta.totalPages)
   const desde = (_seriesAdminPagina - 1) * _seriesAdminPorPagina
-  const visibles = filtradas.slice(desde, desde + _seriesAdminPorPagina)
 
-  tbody.innerHTML = visibles.map(s => {
+  tbody.innerHTML = _seriesAdminCache.map(s => {
     const padre = s.codigoPadre
       ? (buscarNodoPorCodigo([...FUNCIONES_SUSTANTIVAS, ...FUNCIONES_COMUNES], s.codigoPadre)?.name || s.codigoPadre)
       : '— Nivel raíz —'
@@ -1508,11 +1533,11 @@ function renderSeriesAdminTable() {
     const encargadoLabel = s.encargadoNombre ? `${s.encargadoNombre} — ${s.encargadoRol}` : '— Sin encargado asignado —'
     return `
     <tr data-id="${s.id}">
-      <td style="font-weight:600;">${s.codigo}</td>
-      <td>${s.nombre}</td>
+      <td style="font-weight:600;">${escapeHtml(s.codigo)}</td>
+      <td>${escapeHtml(s.nombre)}</td>
       <td>${categoriaLabel}</td>
-      <td style="font-size:12px;color:var(--gray-600);">${padre}</td>
-      <td style="font-size:12px;color:var(--gray-600);">${encargadoLabel}</td>
+      <td style="font-size:12px;color:var(--gray-600);">${escapeHtml(padre)}</td>
+      <td style="font-size:12px;color:var(--gray-600);">${escapeHtml(encargadoLabel)}</td>
       <td>
         <div class="action-btns">
           <button class="btn-action-edit" title="Editar serie ${s.codigo}" onclick="abrirEditarSerie('${s.id}')">✏️</button>
@@ -1524,17 +1549,12 @@ function renderSeriesAdminTable() {
   }).join('')
 
   if (paginacion) {
-    const hasta = Math.min(desde + _seriesAdminPorPagina, filtradas.length)
-    let botonesPagina = ''
-    for (let p = 1; p <= totalPaginas; p++) {
-      const activo = p === _seriesAdminPagina ? ' series-admin-pagina-activa' : ''
-      botonesPagina += `<button class="series-admin-pagina-btn${activo}" onclick="cambiarPaginaSeriesAdmin(${p})">${p}</button>`
-    }
+    const hasta = Math.min(desde + _seriesAdminCache.length, _seriesAdminMeta.total)
     paginacion.innerHTML = `
-      <span class="series-admin-paginacion-texto">Mostrando ${desde + 1}–${hasta} de ${filtradas.length}</span>
+      <span class="series-admin-paginacion-texto">Mostrando ${desde + 1}–${hasta} de ${_seriesAdminMeta.total}</span>
       <div class="series-admin-paginacion-controles">
         <button class="btn btn-ghost btn-sm" ${_seriesAdminPagina === 1 ? 'disabled' : ''} onclick="cambiarPaginaSeriesAdmin(${_seriesAdminPagina - 1})">‹ Anterior</button>
-        ${botonesPagina}
+        <span class="series-admin-paginacion-texto">Página ${_seriesAdminPagina} de ${totalPaginas}</span>
         <button class="btn btn-ghost btn-sm" ${_seriesAdminPagina === totalPaginas ? 'disabled' : ''} onclick="cambiarPaginaSeriesAdmin(${_seriesAdminPagina + 1})">Siguiente ›</button>
       </div>`
   }
@@ -1545,7 +1565,7 @@ function fmtDateInput(iso) {
   return String(iso).slice(0, 10)
 }
 
-function abrirEditarSerie(id) {
+async function abrirEditarSerie(id) {
   const s = _seriesAdminCache.find(x => x.id === id)
   if (!s) return
 
@@ -1557,7 +1577,7 @@ function abrirEditarSerie(id) {
   openModal('Editar Serie Documental', `
     <div class="field-group">
       <label>Código (fijo)</label>
-      <p style="margin:0; padding:8px 0; font-weight:600;">${s.codigo}</p>
+      <p style="margin:0; padding:8px 0; font-weight:600;">${escapeHtml(s.codigo)}</p>
     </div>
     <div class="field-group">
       <label>Categoría (fija)</label>
@@ -1569,7 +1589,7 @@ function abrirEditarSerie(id) {
     </div>
     <div class="field-group">
       <label>Nombre de la serie</label>
-      <input id="em-serie-nombre" value="${s.nombre}" />
+      <input id="em-serie-nombre" maxlength="200" value="${escapeHtml(s.nombre)}" />
     </div>
     <div class="field-group">
       <label>Encargado de la subdivisión</label>
@@ -1586,22 +1606,22 @@ function abrirEditarSerie(id) {
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-purple" id="btn-save-edit-serie">Guardar Cambios</button>`)
 
-  poblarSelectEncargadoSerie('em-serie-encargado').then(() => {
-    const sel = document.getElementById('em-serie-encargado')
-    if (sel) sel.value = s.encargadoId || ''
-  })
+  const encargadoCargado = await poblarSelectEncargadoSerie('em-serie-encargado')
+  const selectEncargado = document.getElementById('em-serie-encargado')
+  if (encargadoCargado && selectEncargado) selectEncargado.value = s.encargadoId || ''
 
   document.getElementById('btn-save-edit-serie').onclick = async () => {
     const nombre = document.getElementById('em-serie-nombre').value.trim()
-    if (!nombre) { toast('Ingresa el nombre de la serie', 'error'); return }
+    if (!nombre || nombre.length > 200) { toast('Ingresa un nombre de serie válido (máximo 200 caracteres)', 'error'); return }
 
     try {
-      const res = await api('PATCH', `/series-documentales/${id}`, {
+      const cambios = {
         nombre,
-        encargadoId: document.getElementById('em-serie-encargado').value || undefined,
         fechaCreacion: document.getElementById('em-fcreacion').value || undefined,
         fechaVencimiento: document.getElementById('em-fvencimiento').value || undefined,
-      })
+      }
+      if (encargadoCargado) cambios.encargadoId = selectEncargado.value || null
+      const res = await api('PATCH', `/series-documentales/${id}`, cambios)
       actualizarNombreNodoEnArbol(s.codigo, res.data.nombre)
       closeModal()
       toast('Serie documental actualizada', 'success')
@@ -1631,7 +1651,7 @@ function confirmDeleteSerie(id) {
         Esta acción es <strong>irreversible</strong>. Si esta serie tiene sub-series debajo,
         el servidor rechazará la eliminación hasta que las borres primero.
       </p>
-      <div class="confirm-modal-user-badge">📁 ${s.codigo} — ${s.nombre}</div>
+      <div class="confirm-modal-user-badge">📁 ${escapeHtml(s.codigo)} — ${escapeHtml(s.nombre)}</div>
     </div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-orange" id="btn-confirm-delete">🗑️ Eliminar definitivamente</button>`)
@@ -1639,12 +1659,11 @@ function confirmDeleteSerie(id) {
   document.getElementById('btn-confirm-delete').onclick = async () => {
     try {
       await api('DELETE', `/series-documentales/${s.id}`)
-      _seriesAdminCache = _seriesAdminCache.filter(x => x.id !== id)
       removeNodoDelArbol(s.codigo)
-      renderSeriesAdminTable()
       closeModal()
       toast('Serie documental eliminada', 'success')
       if (navState.year) renderView()
+      await loadSeriesAdmin()
     } catch (err) {
       closeModal()
       if (err && err.status === 409) { toast(err.message, 'error'); return }
@@ -1659,7 +1678,8 @@ if (_inputBuscarSeriesAdmin) {
   _inputBuscarSeriesAdmin.oninput = e => {
     _seriesAdminFiltro = e.target.value
     _seriesAdminPagina = 1
-    renderSeriesAdminTable()
+    clearTimeout(_seriesAdminBuscarTimer)
+    _seriesAdminBuscarTimer = setTimeout(loadSeriesAdmin, 250)
   }
 }
 

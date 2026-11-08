@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-11-05T18:00:00Z",
+  "generatedOnPlatform": "win32",
+  "projectType": "server",
+  "setup": [],
+  "assertions": [
+    {
+      "name": "bun-build-api",
+      "kind": "process",
+      "command": "bun",
+      "args": [
+        "build",
+        "api/index.ts",
+        "--target=bun",
+        "--outdir",
+        ".temp\\runtime-validation-bun-build"
+      ],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 120
+    },
+    {
+      "name": "typescript-typecheck",
+      "kind": "process",
+      "command": "bun",
+      "args": [
+        "node_modules\\typescript\\bin\\tsc",
+        "--noEmit",
+        "--module",
+        "preserve",
+        "--moduleResolution",
+        "bundler"
+      ],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 120
+    },
+    {
+      "name": "tests-pass",
+      "kind": "process",
+      "command": "bun",
+      "args": ["test"],
+      "verificationMethod": "test-results",
+      "expected": "0",
+      "timeoutSeconds": 120
+    }
+  ]
+}

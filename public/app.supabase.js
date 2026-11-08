@@ -275,10 +275,7 @@ async function api(method, path, body) {
     headers.Authorization = `Bearer ${accessToken}`
   }
 
-  let url = '/api/usuarios'
-  if (path !== '/usuarios' && path.startsWith('/usuarios/')) {
-    url = `/api/usuarios/${encodeURIComponent(path.replace('/usuarios/', ''))}`
-  }
+  const url = `/api${path}`
 
   const response = await fetch(url, {
     method,

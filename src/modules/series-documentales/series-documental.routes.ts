@@ -11,6 +11,7 @@ import {
 } from './series-documental.schema'
 import { validateBody, validateQuery } from '../../middleware/validator.middleware'
 import { authMiddleware } from '../../middleware/auth.middleware'
+import type { JwtPayload } from '../../middleware/auth.middleware'
 
 export const seriesDocumentalesRoutes = new Hono()
 
@@ -19,7 +20,7 @@ seriesDocumentalesRoutes.use('*', authMiddleware)
 // Igual patrón que usuarios.routes.ts (canManageUsers): permiso booleano, no
 // requireRole — requireRole solo compara jerarquía de roles fijos, no
 // permisos granulares como crearUsuarios. Gatea crear Y eliminar.
-function puedeGestionarSeries(user: any) {
+function puedeGestionarSeries(user: JwtPayload) {
   return user?.rol === 'ADMIN' || user?.permisos?.crearUsuarios === true
 }
 
@@ -32,7 +33,7 @@ seriesDocumentalesRoutes.get('/', validateQuery(SerieDocumentalQuerySchema), asy
 })
 
 seriesDocumentalesRoutes.post('/', validateBody(SerieDocumentalSchema), async (c) => {
-  const caller = c.get('user') as any
+  const caller = c.get('user')
   if (!puedeGestionarSeries(caller)) {
     throw new HTTPException(403, { message: 'No tienes permiso para crear series documentales' })
   }
@@ -42,7 +43,7 @@ seriesDocumentalesRoutes.post('/', validateBody(SerieDocumentalSchema), async (c
 })
 
 seriesDocumentalesRoutes.patch('/:id', validateBody(SerieDocumentalUpdateSchema), async (c) => {
-  const caller = c.get('user') as any
+  const caller = c.get('user')
   if (!puedeGestionarSeries(caller)) {
     throw new HTTPException(403, { message: 'No tienes permiso para editar series documentales' })
   }
@@ -52,7 +53,7 @@ seriesDocumentalesRoutes.patch('/:id', validateBody(SerieDocumentalUpdateSchema)
 })
 
 seriesDocumentalesRoutes.delete('/:id', async (c) => {
-  const caller = c.get('user') as any
+  const caller = c.get('user')
   if (!puedeGestionarSeries(caller)) {
     throw new HTTPException(403, { message: 'No tienes permiso para eliminar series documentales' })
   }
