@@ -204,6 +204,27 @@ body {
   box-shadow: 0 0 0 3px rgba(128,0,32,0.12);
 }
 
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transform: translateY(-50%);
+  color: #666;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.password-toggle:hover { color: #222; }
+.password-toggle:focus-visible { outline: 2px solid var(--guinda); outline-offset: 2px; }
+.password-toggle svg { width: 18px; height: 18px; }
+.password-toggle svg[hidden] { display: none; }
+
 .remember-row {
   display: flex;
   align-items: center;
@@ -2010,4 +2031,3 @@ body {
   font-weight: 500;
   color: var(--gray-600);
 }
-
