@@ -43,6 +43,20 @@ test('supports server-side search and pagination defaults', () => {
   })
 })
 
+test('supports filtering by an authorized subdirection', () => {
+  expect(SerieDocumentalQuerySchema.parse({
+    subdireccion: 'Subdirección Académica',
+  })).toMatchObject({
+    subdireccion: 'Subdirección Académica',
+    page: 1,
+    limit: 100,
+  })
+  expect(SerieDocumentalQuerySchema.parse({
+    subdireccion: 'Subdirección de Academia',
+  }).subdireccion).toBe('Subdirección de Academia')
+  expect(SerieDocumentalQuerySchema.safeParse({ subdireccion: 'Otra subdirección' }).success).toBe(false)
+})
+
 test('allows clearing the encargado while editing', () => {
   expect(SerieDocumentalUpdateSchema.parse({ encargadoId: null })).toEqual({ encargadoId: null })
 })

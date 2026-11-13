@@ -1,6 +1,11 @@
 import { z } from 'zod'
+import { SUBDIRECCIONES_SERIES, SUBDIRECCIONES_SERIES_ALIAS } from './series-documental.catalog'
 
 export const CategoriaSerieSchema = z.enum(['sustantivas', 'comunes'])
+export const SubdireccionSerieSchema = z.enum([
+  ...SUBDIRECCIONES_SERIES,
+  ...SUBDIRECCIONES_SERIES_ALIAS,
+])
 
 export const SerieDocumentalSchema = z.object({
   codigo: z
@@ -29,6 +34,7 @@ export const SerieDocumentalSchema = z.object({
 
 export const SerieDocumentalQuerySchema = z.object({
   categoria: CategoriaSerieSchema.optional(),
+  subdireccion: SubdireccionSerieSchema.optional(),
   buscar: z.string().trim().max(200).optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(200).default(100),

@@ -1,12 +1,40 @@
-// ─── CATÁLOGO ARCHIVATEC ─────────────────────────────────────────
+// ─── CATÁLOGO DEL SISTEMA DIGITAL DE ARCHIVOS ────────────────────
 // CONTENIDO LITERAL - NO EDITAR NOMBRES
 
 const SUBDIRECCIONES = [
-  'Subdirección de Academia',
-  'Subdirección de Planeación',
-  'Subdirección de Administración',
-  'Subdirección de Extensión',
+  'Subdirección Académica',
+  'Subdirección de Servicios Administrativos',
+  'Subdirección de Planeación y Vinculación',
+  'Subdirección de Extensión y Vinculación',
 ]
+
+const SERIES_POR_SUBDIRECCION = {
+  'Subdirección Académica': ['3S'],
+  'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C'],
+  'Subdirección de Planeación y Vinculación': ['1S', '2S', '5S'],
+  'Subdirección de Extensión y Vinculación': ['4S'],
+}
+
+const CARRERAS_DOCENCIA = [
+  'Licenciatura en Administración',
+  'Ingeniería en Sistemas Computacionales',
+  'Ingeniería en Industrias Alimentarias',
+  'Gastronomía',
+  'Ingeniería en Energías Renovables',
+  'Licenciatura en Turismo',
+  'Ingeniería en Animación Digital y Efectos Visuales',
+  'Contador Público',
+  'Licenciatura en Administración Modalidad Mixta',
+  'Ingeniería Ferroviaria',
+  'Ingeniería en Inteligencia Artificial',
+]
+
+function subseriesCarreras(codigoSerie, primerIndice = 1) {
+  return CARRERAS_DOCENCIA.map((nombre, index) => ({
+    code: `${codigoSerie}.${String(index + primerIndice).padStart(2, '0')}`,
+    name: nombre,
+  }))
+}
 
 const FUNCIONES_SUSTANTIVAS = [
   {
@@ -69,27 +97,28 @@ const FUNCIONES_SUSTANTIVAS = [
     code: '3S',
     name: 'DOCENCIA',
     children: [
-      { code: '3S.01', name: 'Crédito Complementario' },
-      { code: '3S.02', name: 'Curso de verano' },
-      { code: '3S.03', name: 'Salida lateral' },
-      { code: '3S.04', name: 'Estancia' },
-      { code: '3S.05', name: 'Residencia' },
-      { code: '3S.06', name: 'Titulación' },
-      { code: '3S.07', name: 'Academia' },
-      { code: '3S.08', name: 'Comité Académico' },
-      { code: '3S.09', name: 'Especialidad' },
+      { code: '3S.01', name: 'Crédito Complementario', children: subseriesCarreras('3S.01') },
+      { code: '3S.02', name: 'Curso de verano', children: subseriesCarreras('3S.02') },
+      { code: '3S.03', name: 'Salida lateral', children: subseriesCarreras('3S.03') },
+      { code: '3S.04', name: 'Estancia', children: subseriesCarreras('3S.04') },
+      { code: '3S.05', name: 'Residencia', children: subseriesCarreras('3S.05') },
+      { code: '3S.06', name: 'Titulación', children: subseriesCarreras('3S.06') },
+      { code: '3S.07', name: 'Academia', children: subseriesCarreras('3S.07') },
+      { code: '3S.08', name: 'Comité Académico', children: subseriesCarreras('3S.08') },
+      { code: '3S.09', name: 'Especialidad', children: subseriesCarreras('3S.09') },
       { code: '3S.10', name: 'Posgrados' },
       { code: '3S.11', name: 'Investigación' },
-      { code: '3S.12', name: 'Acreditación' },
+      { code: '3S.12', name: 'Acreditación', children: subseriesCarreras('3S.12') },
       { code: '3S.13', name: 'Estructura educativa' },
       {
         code: '3S.14',
         name: 'Gestión del curso',
         children: [
-          { code: '3S.14.01', name: 'Proyectos individuales' },
+          { code: '3S.14.01', name: 'Proyectos Individuales' },
+          ...subseriesCarreras('3S.14', 2),
         ],
       },
-      { code: '3S.15', name: 'Eventos académicos' },
+      { code: '3S.15', name: 'Eventos académicos', children: subseriesCarreras('3S.15') },
       {
         code: '3S.16',
         name: 'Evaluación al desempeño del docente',

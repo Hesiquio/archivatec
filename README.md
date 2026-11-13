@@ -1,4 +1,4 @@
-# 🏛️ ArchivaTEC
+# 🏛️ Sistema Digital de Archivos
 
 [![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh/)
 [![Hono](https://img.shields.io/badge/Hono-E36002?style=for-the-badge&logo=hono&logoColor=white)](https://hono.dev/)
@@ -9,7 +9,7 @@
 
 ## ¿Qué es?
 
-**ArchivaTEC** es un sistema de gestión de archivo documental para el **Instituto Tecnológico Superior de Escárcega (ITSE)**: control de cajas físicas, expedientes (de alumnos, personal y series administrativas), digitalización de documentos a PDF, préstamos con seguimiento de devolución, y control de acceso granular por rol (Administrador / Gestor de Archivos / Usuario de Consulta — ver detalle de permisos en [CONTEXT_FOR_AI.md](CONTEXT_FOR_AI.md#-modelo-de-seguridad-y-rbac-role-based-access-control)).
+**Sistema Digital de Archivos** es un sistema de gestión de archivo documental para el **Instituto Tecnológico Superior de Escárcega (ITSE)**: control de cajas físicas, expedientes (de alumnos, personal y series administrativas), digitalización de documentos a PDF, préstamos con seguimiento de devolución, y control de acceso granular por rol (Administrador / Gestor de Archivos / Usuario de Consulta — ver detalle de permisos en [CONTEXT_FOR_AI.md](CONTEXT_FOR_AI.md#-modelo-de-seguridad-y-rbac-role-based-access-control)).
 
 Es un **proyecto de equipo**, no personal — el repositorio es público, el backend corre en Vercel (`archivatec.vercel.app`) y la base de datos/storage es un proyecto de Supabase compartido. Antes de tocar nada, revisa la sección [🔄 Flujo de Trabajo en Equipo](#-flujo-de-trabajo-en-equipo) más abajo — hay reglas no obvias (quién mergea los PRs, cómo se aplican las migraciones) que rompen cosas si se ignoran.
 

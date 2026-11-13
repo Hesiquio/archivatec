@@ -1,16 +1,30 @@
 import { db } from '../../infrastructure/database/client'
 import { seriesDocumentales, usuarios } from '../../infrastructure/database/schema'
-import { eq, and, sql, desc, ilike, or } from 'drizzle-orm'
+import { eq, and, sql, desc, ilike, like, or } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { SerieDocumentalDTO, SerieDocumentalQueryDTO, SerieDocumentalUpdateDTO } from './series-documental.schema'
+import { categoriaDePrefijo, esPrefijoCatalogado, getPrefijosPermitidos, obtenerPrefijoRaiz } from './series-documental.catalog'
 
 export class SerieDocumentalService {
   async listar(query: SerieDocumentalQueryDTO) {
-    const { page, limit, categoria, buscar } = query
+    const { page, limit, categoria, buscar, subdireccion } = query
     const offset = (page - 1) * limit
 
     const conditions = []
     if (categoria) conditions.push(eq(seriesDocumentales.categoria, categoria))
+    if (subdireccion) {
+      const prefixes = getPrefijosPermitidos(subdireccion) || []
+      const catalogCategory = categoriaDePrefijo(prefixes[0])
+      conditions.push(prefixes.length && catalogCategory
+        ? and(
+          eq(seriesDocumentales.categoria, catalogCategory),
+          or(...prefixes.flatMap((prefix) => [
+            eq(seriesDocumentales.codigo, prefix),
+            like(seriesDocumentales.codigo, `${prefix}.%`),
+          ]))!,
+        )!
+        : sql`false`)
+    }
     if (buscar) {
       const pattern = `%${buscar.replace(/[\\%_]/g, '\\$&')}%`
       conditions.push(or(
@@ -58,6 +72,14 @@ export class SerieDocumentalService {
   }
 
   async crear(data: SerieDocumentalDTO, creadoPorId?: string) {
+    const rootPrefix = obtenerPrefijoRaiz(data.codigo)
+    if (!rootPrefix || !esPrefijoCatalogado(rootPrefix)) {
+      throw new HTTPException(422, { message: 'El código debe pertenecer a una sección autorizada del catálogo documental' })
+    }
+    if (categoriaDePrefijo(rootPrefix) !== data.categoria) {
+      throw new HTTPException(422, { message: 'La categoría no corresponde al prefijo del código' })
+    }
+
     if (data.encargadoId) {
       const [encargado] = await db
         .select({ id: usuarios.id })
@@ -84,9 +106,13 @@ export class SerieDocumentalService {
         throw new HTTPException(422, { message: 'La carpeta padre debe pertenecer a la misma categoría' })
       }
 
+      const parentRoot = obtenerPrefijoRaiz(data.codigoPadre)
+      if (parentRoot !== rootPrefix) {
+        throw new HTTPException(422, { message: 'La carpeta padre debe pertenecer a la misma sección del catálogo' })
+      }
+
       if (!padre) {
-        const catalogRoot = data.codigoPadre.match(/^\d+([SC])(?:\.|$)/)?.[1]
-        const parentCategory = catalogRoot === 'S' ? 'sustantivas' : catalogRoot === 'C' ? 'comunes' : null
+        const parentCategory = parentRoot ? categoriaDePrefijo(parentRoot) : null
         if (parentCategory && parentCategory !== data.categoria) {
           throw new HTTPException(422, { message: 'La carpeta padre debe pertenecer a la misma categoría' })
         }

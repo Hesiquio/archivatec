@@ -2,6 +2,7 @@ import { beforeEach, expect, mock, test } from 'bun:test'
 
 const queryResults: unknown[][] = []
 const databaseCalls: string[] = []
+const whereArguments: unknown[] = []
 let insertedValues: Record<string, unknown> | undefined
 
 function query(result: unknown[]) {
@@ -9,6 +10,7 @@ function query(result: unknown[]) {
   for (const method of ['from', 'leftJoin', 'where', 'orderBy', 'limit', 'offset', 'values', 'set']) {
     builder[method] = (...args: unknown[]) => {
       databaseCalls.push(method)
+      if (method === 'where') whereArguments.push(args[0])
       if (method === 'values') insertedValues = args[0] as Record<string, unknown>
       return builder
     }
@@ -52,6 +54,7 @@ async function tokenFor(role: string, canManage = true) {
 beforeEach(() => {
   queryResults.length = 0
   databaseCalls.length = 0
+  whereArguments.length = 0
   insertedValues = undefined
   db.select.mockClear()
   db.insert.mockClear()
@@ -68,6 +71,19 @@ test('lists series with joined user data and database pagination totals', async 
   expect(result.data[0].encargadoNombre).toBe('Encargada')
   expect(result.meta).toEqual({ total: 17, page: 2, limit: 8, totalPages: 3 })
   expect(databaseCalls.filter((call) => call === 'leftJoin')).toHaveLength(2)
+})
+
+test('applies the subdirection filter to rows and pagination totals', async () => {
+  queryResults.push([], [{ total: '0' }])
+
+  await service.listar({
+    page: 1,
+    limit: 100,
+    subdireccion: 'Subdirección Académica',
+  })
+
+  expect(whereArguments).toHaveLength(2)
+  expect(whereArguments.every(Boolean)).toBe(true)
 })
 
 test('validates the assigned user and stores parent, category, and creator', async () => {
@@ -91,6 +107,17 @@ test('validates the assigned user and stores parent, category, and creator', asy
     encargadoId: '00000000-0000-0000-0000-000000000001',
     creadoPorId: 'creator-id',
   })
+})
+
+test('rejects codes outside authorized catalog roots before writing', async () => {
+  await expect(service.crear({
+    codigo: '6S.01',
+    nombre: 'Serie fuera del catálogo',
+    categoria: 'sustantivas',
+  })).rejects.toMatchObject({ status: 422 })
+
+  expect(db.select).not.toHaveBeenCalled()
+  expect(db.insert).not.toHaveBeenCalled()
 })
 
 test('rejects an assigned user that does not exist', async () => {

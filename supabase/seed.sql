@@ -13,22 +13,22 @@ insert into public.profiles (id, username, display_name, division, role, crear_u
 values
   ('00000000-0000-0000-0000-000000000001', 'admin', 'Administrador del Sistema', 'Sistemas', 'Administrador', true, true, true, true, true),
   ('00000000-0000-0000-0000-000000000002', 'jgarcia', 'Jesús García López', 'Dirección General', 'Administrador', true, true, true, true, true),
-  ('00000000-0000-0000-0000-000000000003', 'rmendez', 'Rosa Méndez Juárez', 'Subdirección de Academia', 'Archivista', false, true, true, false, true),
-  ('00000000-0000-0000-0000-000000000004', 'aperez', 'Ana Pérez Castillo', 'Subdirección de Extensión', 'Usuario de Consulta', false, false, false, false, true)
+  ('00000000-0000-0000-0000-000000000003', 'rmendez', 'Rosa Méndez Juárez', 'Subdirección Académica', 'Archivista', false, true, true, false, true),
+  ('00000000-0000-0000-0000-000000000004', 'aperez', 'Ana Pérez Castillo', 'Subdirección de Extensión y Vinculación', 'Usuario de Consulta', false, false, false, false, true)
 ON CONFLICT (id) DO NOTHING;
 
 insert into public.usuarios (id, nombre, email, password_hash, rol, division, crear_usuarios, subir_archivos, modificar_archivos, eliminar_archivos, ver_otras_divisiones, activo)
 values
   ('00000000-0000-0000-0000-000000000001', 'Administrador del Sistema', 'admin@archivatec.local', crypt('Admin@1234!', gen_salt('bf')), 'ADMIN', 'Sistemas', true, true, true, true, true, true),
   ('00000000-0000-0000-0000-000000000002', 'Jesús García López', 'jgarcia@itse.edu.mx', crypt('Password@123', gen_salt('bf')), 'ADMIN', 'Dirección General', true, true, true, true, true, true),
-  ('00000000-0000-0000-0000-000000000003', 'Rosa Méndez Juárez', 'rmendez@itse.edu.mx', crypt('Password@123', gen_salt('bf')), 'ARCHIVISTA', 'Subdirección de Academia', false, true, true, false, true, true),
-  ('00000000-0000-0000-0000-000000000004', 'Ana Pérez Castillo', 'aperez@itse.edu.mx', crypt('Password@123', gen_salt('bf')), 'CONSULTA', 'Subdirección de Extensión', false, false, false, false, true, true)
+  ('00000000-0000-0000-0000-000000000003', 'Rosa Méndez Juárez', 'rmendez@itse.edu.mx', crypt('Password@123', gen_salt('bf')), 'ARCHIVISTA', 'Subdirección Académica', false, true, true, false, true, true),
+  ('00000000-0000-0000-0000-000000000004', 'Ana Pérez Castillo', 'aperez@itse.edu.mx', crypt('Password@123', gen_salt('bf')), 'CONSULTA', 'Subdirección de Extensión y Vinculación', false, false, false, false, true, true)
 ON CONFLICT (id) DO NOTHING;
 
 insert into public.ubicaciones (id, codigo, descripcion, salon, estante, fila, columna, capacidad_maxima, ocupacion_actual)
 values
   ('11111111-1111-1111-1111-111111111111', 'UBI-001', 'Archivo Central', 'A-101', 1, 1, 1, 50, 12),
-  ('22222222-2222-2222-2222-222222222222', 'UBI-002', 'Subdirección de Academia', 'B-204', 2, 3, 4, 30, 7)
+  ('22222222-2222-2222-2222-222222222222', 'UBI-002', 'Subdirección Académica', 'B-204', 2, 3, 4, 30, 7)
 ON CONFLICT (id) DO NOTHING;
 
 insert into public.cajas (id, numero_caja, descripcion, tipo_documento, fecha_inicio, fecha_fin, ubicacion_id, estado, total_expedientes)
@@ -45,7 +45,7 @@ ON CONFLICT (id) DO NOTHING;
 
 insert into public.prestamos (id, expediente_id, caja_id, solicitante_nombre, solicitante_matricula, solicitante_departamento, motivo_prestamo, fecha_salida, fecha_devolucion_esperada, autorizado_por_id, estado)
 values
-  ('77777777-7777-7777-7777-777777777777', '55555555-5555-5555-5555-555555555555', '33333333-3333-3333-3333-333333333333', 'Ana Pérez Castillo', '202410087', 'Subdirección de Extensión', 'Consulta de expediente para seguimiento académico', '2024-05-10', '2024-05-17', '00000000-0000-0000-0000-000000000002', 'ACTIVO')
+  ('77777777-7777-7777-7777-777777777777', '55555555-5555-5555-5555-555555555555', '33333333-3333-3333-3333-333333333333', 'Ana Pérez Castillo', '202410087', 'Subdirección de Extensión y Vinculación', 'Consulta de expediente para seguimiento académico', '2024-05-10', '2024-05-17', '00000000-0000-0000-0000-000000000002', 'ACTIVO')
 ON CONFLICT (id) DO NOTHING;
 
 insert into public.digitalizaciones (id, expediente_id, operador_id, equipo_escaner, resolucion_dpi, formato_archivo, total_paginas, url_archivo, checksum_sha256, estado)

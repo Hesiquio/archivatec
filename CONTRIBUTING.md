@@ -1,6 +1,6 @@
 # Guía de Contribución 🤝
 
-¡Bienvenido al equipo de **Archivatec**! Esta guía te ayudará a entender cómo trabajar en el proyecto de manera eficiente.
+¡Bienvenido al equipo del **Sistema Digital de Archivos**! Esta guía te ayudará a entender cómo trabajar en el proyecto de manera eficiente.
 
 ## 🛠️ Entorno de Desarrollo
 
@@ -50,4 +50,4 @@ Para preparar el proyecto para producción:
 3. Ejecuta `bun run start`.
 
 ---
-¡Gracias por ayudar a mejorar Archivatec!
+¡Gracias por ayudar a mejorar el Sistema Digital de Archivos!

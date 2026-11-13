@@ -1,6 +1,6 @@
 # Supabase
 
-Esta carpeta contiene la configuración y las migraciones de la base de datos para ArchivaTEC.
+Esta carpeta contiene la configuración y las migraciones de la base de datos para el Sistema Digital de Archivos.
 
 ## Estructura
 

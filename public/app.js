@@ -106,7 +106,7 @@ let currentDivision = ''
 // navState mantiene el camino actual del usuario
 let navState = {
   year: null,           // e.g. 2026
-  subdir: null,         // e.g. 'Subdirección de Academia'
+  subdir: null,         // e.g. 'Subdirección Académica'
   category: null,       // 'sustantivas' | 'comunes'
   path: [],             // array de nodos { code, name } desde raíz al actual
 }
@@ -150,6 +150,27 @@ function resolveSerieInfo(code) {
 // openFolder/renderFolderChildren los leen por referencia, así que no hace
 // falta tocar la navegación existente.
 let _seriesDinamicasCargadas = false
+const _seriesDinamicasCargadasPorSubdireccion = new Set()
+
+function prefijosPermitidosParaSubdireccion(subdireccion) {
+  return SERIES_POR_SUBDIRECCION[subdireccion] || []
+}
+
+function perteneceALaSubdireccion(codigo, subdireccion) {
+  return prefijosPermitidosParaSubdireccion(subdireccion).some(prefix =>
+    codigo === prefix || codigo.startsWith(`${prefix}.`)
+  )
+}
+
+function raicesPermitidasParaSubdireccion(subdireccion, categoria) {
+  const tree = categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
+  return tree.filter(node => perteneceALaSubdireccion(node.code, subdireccion))
+}
+
+function subdireccionParaCodigo(codigo) {
+  return SUBDIRECCIONES.find(subdireccion => perteneceALaSubdireccion(codigo, subdireccion))
+    || SUBDIRECCIONES[0]
+}
 
 function mergeSerieEnArbol(serie) {
   if (!serie || !serie.codigo) return
@@ -169,17 +190,22 @@ function mergeSerieEnArbol(serie) {
   tree.push(nuevoNodo)
 }
 
-async function fetchYFusionarSeriesDinamicas() {
+async function fetchYFusionarSeriesDinamicas(subdireccion = null) {
+  if (subdireccion && (_seriesDinamicasCargadas || _seriesDinamicasCargadasPorSubdireccion.has(subdireccion))) return
+  if (!subdireccion && _seriesDinamicasCargadas) return
+
   try {
     let page = 1
     let totalPages = 1
     do {
-      const res = await api('GET', `/series-documentales?limit=200&page=${page}`)
+      const filtroSubdireccion = subdireccion ? `&subdireccion=${encodeURIComponent(subdireccion)}` : ''
+      const res = await api('GET', `/series-documentales?limit=200&page=${page}${filtroSubdireccion}`)
       ;(res.data || []).forEach(mergeSerieEnArbol)
       totalPages = res.meta?.totalPages || 1
       page += 1
     } while (page <= totalPages)
-    _seriesDinamicasCargadas = true
+    if (subdireccion) _seriesDinamicasCargadasPorSubdireccion.add(subdireccion)
+    else _seriesDinamicasCargadas = true
   } catch (err) {
     console.error('No se pudieron cargar las series documentales dinámicas:', err)
     toast('No se pudieron cargar algunas series documentales guardadas', 'error')
@@ -234,13 +260,11 @@ function buscarRutaHastaNodo(nodes, targetCode, ruta = []) {
 
 // Navega directo a la carpeta de Registros donde vive una serie, sin pasar
 // por navigateTo('registros')/loadRegistros() (ambas resetean navState).
-// Año y Subdirección son solo pasos de navegación que no filtran contenido
-// real (el árbol es el mismo sin importar cuál se elija), así que se fija
-// cualquier valor válido.
+// El año es solo un paso de navegación; la subdirección determina las raíces
+// documentales visibles para la ruta.
 // Cambia a la vista Registros y aterriza en la carpeta dada, sin pasar por
 // navigateTo('registros')/loadRegistros() (ambas resetean navState). Año y
-// Subdirección son solo pasos de navegación que no filtran contenido real,
-// así que se fija cualquier valor válido. Compartido por el botón "ir a
+// subdirección se determinan a partir del código de la serie. Compartido por el botón "ir a
 // ubicación" de Series Documentales y de Registro de Actividades.
 function irACarpetaRegistros(categoria, ruta) {
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -251,7 +275,7 @@ function irACarpetaRegistros(categoria, ruta) {
 
   navState = {
     year: YEARS[YEARS.length - 1],
-    subdir: SUBDIRECCIONES[0],
+    subdir: subdireccionParaCodigo(ruta[0]?.code || ''),
     category: categoria,
     path: ruta,
   }
@@ -726,9 +750,6 @@ function renderView() {
 // ── Nivel 1: Años ────────────────────────────────────────────
 async function loadRegistros() {
   resetNavState()
-  if (!_seriesDinamicasCargadas) {
-    await fetchYFusionarSeriesDinamicas()
-  }
   renderView()
 }
 
@@ -779,33 +800,50 @@ function renderSubdirecciones(container) {
     </div>`
 }
 
-function selectSubdir(subdir) {
+async function selectSubdir(subdir) {
+  if (!Object.prototype.hasOwnProperty.call(SERIES_POR_SUBDIRECCION, subdir)) {
+    toast('La subdirección seleccionada no está autorizada en el catálogo', 'error')
+    return
+  }
   navState.subdir = subdir
+  navState.category = null
+  navState.path = []
+  await fetchYFusionarSeriesDinamicas(subdir)
   renderView()
 }
 
 // ── Nivel 3: Categorías (Sustantivas / Comunes) ───────────────
 function renderCategories(container) {
+  const sustantivas = raicesPermitidasParaSubdireccion(navState.subdir, 'sustantivas')
+  const comunes = raicesPermitidasParaSubdireccion(navState.subdir, 'comunes')
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">${navState.subdir}</h3>
       <p class="section-sub">Selecciona el tipo de funciones</p>
     </div>
     <div class="folder-grid cat-grid">
-      <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
+      ${sustantivas.length ? `<button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
         <span class="folder-icon">📁</span>
         <span class="folder-name">FUNCIONES SUSTANTIVAS</span>
-        <span class="folder-badge">${FUNCIONES_SUSTANTIVAS.length} secciones</span>
-      </button>
-      <button class="folder-card cat-comun" onclick="selectCategory('comunes')">
+        <span class="folder-badge">${sustantivas.length} secciones autorizadas</span>
+      </button>` : ''}
+      ${comunes.length ? `<button class="folder-card cat-comun" onclick="selectCategory('comunes')">
         <span class="folder-icon">📂</span>
         <span class="folder-name">FUNCIONES COMUNES</span>
-        <span class="folder-badge">${FUNCIONES_COMUNES.length} secciones</span>
-      </button>
+        <span class="folder-badge">${comunes.length} secciones autorizadas</span>
+      </button>` : ''}
     </div>`
 }
 
 function selectCategory(cat) {
+  if (!['sustantivas', 'comunes'].includes(cat)) {
+    toast('Selecciona una categoría válida', 'error')
+    return
+  }
+  if (!raicesPermitidasParaSubdireccion(navState.subdir, cat).length) {
+    toast('Esta subdirección no tiene series autorizadas en esa categoría', 'error')
+    return
+  }
   navState.category = cat
   navState.path = []
   renderView()
@@ -813,7 +851,7 @@ function selectCategory(cat) {
 
 // ── Nivel 4+: Carpetas raíz de la categoría ──────────────────
 function renderRootFolders(container) {
-  const list = navState.category === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
+  const list = raicesPermitidasParaSubdireccion(navState.subdir, navState.category)
   const catLabel = navState.category === 'sustantivas' ? 'FUNCIONES SUSTANTIVAS' : 'FUNCIONES COMUNES'
 
   container.innerHTML = `
@@ -882,15 +920,7 @@ function renderFolderChildren(container, node) {
           <span class="terminal-chip">🗂 ${escapeHtml(node.name)}</span>
         </div>
         
-        <div class="pdf-management-section" style="width: 100%;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h4 style="font-size: 14px; color: var(--blue);">Documentos Digitalizados</h4>
-            <button class="btn btn-purple btn-sm" onclick="handleFileUpload('${expedienteId}', () => loadDigitalizaciones('${expedienteId}', '${containerId}'))">
-              + Subir PDF
-            </button>
-          </div>
-          <div id="${containerId}"></div>
-        </div>
+        ${panelCargaSerie(node, 'Documentos Digitalizados')}
       </div>`
     
     // Cargar digitalizaciones asíncronamente
@@ -902,8 +932,27 @@ function renderFolderChildren(container, node) {
     <div class="section-header">
       <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
     </div>
+    ${node.code === '3S.14' ? panelCargaSerie(node, 'Información general de gestión del curso') : ''}
     <div class="folder-list">
       ${node.children.map(child => folderItemHTML(child)).join('')}
+    </div>`
+  if (node.code === '3S.14') {
+    const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
+    setTimeout(() => loadDigitalizaciones(node.code, containerId), 100)
+  }
+}
+
+function panelCargaSerie(node, titulo) {
+  const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
+  return `
+    <div class="pdf-management-section" style="width: 100%; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 style="font-size: 14px; color: var(--blue);">${escapeHtml(titulo)}</h4>
+        <button class="btn btn-purple btn-sm" onclick="handleFileUpload('${node.code}', () => loadDigitalizaciones('${node.code}', '${containerId}'))">
+          + Subir PDF
+        </button>
+      </div>
+      <div id="${containerId}"></div>
     </div>`
 }
 
@@ -925,7 +974,7 @@ function folderItemHTML(node) {
 // ── Navegar a un nodo ─────────────────────────────────────────
 function openFolder(code, name, hasChildren) {
   // Buscar el nodo real en el árbol
-  const list = navState.category === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
+  const list = raicesPermitidasParaSubdireccion(navState.subdir, navState.category)
 
   let node = null
   if (navState.path.length === 0) {
@@ -1173,8 +1222,9 @@ function openNuevoUsuarioModal() {
 
   openModal('➕ Nuevo Usuario', `
     <div class="field-group">
-      <label>División / Departamento</label>
-      <input id="m-division" placeholder="Ej. Subdirección de Academia" />
+      <label>Subdirección / Departamento</label>
+      <input id="m-division" list="subdirecciones-itse" placeholder="Ej. Subdirección Académica" />
+      <datalist id="subdirecciones-itse">${SUBDIRECCIONES.map(nombre => `<option value="${escapeHtml(nombre)}"></option>`).join('')}</datalist>
     </div>
     <div class="field-group">
       <label>Nombre completo del encargado</label>
@@ -1841,8 +1891,9 @@ function openEditUsuarioModal(idx) {
 
   openModal(`✏️ Editar Usuario — ${u.username || ''}`, `
     <div class="field-group">
-      <label>División / Departamento</label>
-      <input id="eu-division" value="${u.division || ''}" placeholder="Ej. Subdirección de Academia" />
+      <label>Subdirección / Departamento</label>
+      <input id="eu-division" list="subdirecciones-itse" value="${u.division || ''}" placeholder="Ej. Subdirección Académica" />
+      <datalist id="subdirecciones-itse">${SUBDIRECCIONES.map(nombre => `<option value="${escapeHtml(nombre)}"></option>`).join('')}</datalist>
     </div>
     <div class="field-group">
       <label>Nombre completo del encargado</label>
@@ -1987,7 +2038,7 @@ function confirmDeleteUsuario(idx) {
       <div class="confirm-modal-title">Eliminar usuario del sistema</div>
       <p class="confirm-modal-text">
         Esta acción es <strong>irreversible</strong>. El usuario perderá
-        completamente el acceso al sistema ArchivaTEC.
+        completamente el acceso al Sistema Digital de Archivos.
       </p>
       <div class="confirm-modal-user-badge">
         👤 ${username} — ${nombre}

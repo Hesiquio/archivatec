@@ -1,11 +1,11 @@
-# 🏛️ Archivatec — Guía de Contexto Técnico para IAs Asistentes
+# 🏛️ Sistema Digital de Archivos — Guía de Contexto Técnico para IAs Asistentes
 
-Este archivo sirve como fuente de verdad técnica y de contexto global para cualquier Inteligencia Artificial Asistente que colabore en el desarrollo de **Archivatec**. Consúltalo antes de realizar cualquier refactorización, creación de módulos o cambios en el esquema.
+Este archivo sirve como fuente de verdad técnica y de contexto global para cualquier Inteligencia Artificial Asistente que colabore en el desarrollo del **Sistema Digital de Archivos**. Consúltalo antes de realizar cualquier refactorización, creación de módulos o cambios en el esquema.
 
 ---
 
 ## 🧭 Visión General del Proyecto
-**Archivatec** es una plataforma web para la digitalización, control de inventario de cajas, expedientes y préstamos documentales del **Instituto Tecnológico Superior de Escárcega (ITSE)**. 
+**Sistema Digital de Archivos** es una plataforma web para la digitalización, control de inventario de cajas, expedientes y préstamos documentales del **Instituto Tecnológico Superior de Escárcega (ITSE)**.
 
 ### Identidad Visual y UI
 - **Paleta de Colores Institucional**: El color primario es el **Guinda/Vino (#800020)**. Utiliza acentos suaves, grises profesionales y toques de naranja institucionales.
