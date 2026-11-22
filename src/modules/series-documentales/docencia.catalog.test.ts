@@ -43,6 +43,21 @@ test('preserves both function catalogs and all configured subdirections', () => 
   })
 })
 
+test('keeps each subdirection connected to its substantive or common function roots', () => {
+  for (const prefijos of Object.values(SERIES_POR_SUBDIRECCION)) {
+    const rootCodes = (roots: CatalogNode[]) => roots
+      .filter((root) => prefijos.some((prefijo) =>
+        root.code === prefijo || root.code.startsWith(`${prefijo}.`),
+      ))
+      .map((root) => root.code)
+
+    expect(rootCodes(FUNCIONES_SUSTANTIVAS)).toEqual(prefijos.filter((code) => code.endsWith('S')))
+    expect(rootCodes(FUNCIONES_COMUNES)).toEqual(prefijos.filter((code) => code.endsWith('C')))
+    expect(rootCodes(FUNCIONES_SUSTANTIVAS).length + rootCodes(FUNCIONES_COMUNES).length)
+      .toBeGreaterThan(0)
+  }
+})
+
 test('adds the 11 career folders only to the requested Docencia series', () => {
   expect(docencia).toBeDefined()
   const series = docencia!.children || []
