@@ -4,10 +4,13 @@ import { runInNewContext } from 'node:vm'
 
 const catalogSource = readFileSync(new URL('../../../public/catalog.js', import.meta.url), 'utf8')
 const catalogContext = runInNewContext(
-  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
+  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
 )
-const { FUNCIONES_SUSTANTIVAS, CARRERAS_DOCENCIA } = JSON.parse(JSON.stringify(catalogContext)) as {
+const { FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
+  JSON.parse(JSON.stringify(catalogContext)) as {
   FUNCIONES_SUSTANTIVAS: CatalogNode[]
+  FUNCIONES_COMUNES: CatalogNode[]
+  SERIES_POR_SUBDIRECCION: Record<string, string[]>
   CARRERAS_DOCENCIA: string[]
 }
 const obtenerHijosNodo = (node: CatalogNode) =>
@@ -26,6 +29,19 @@ const seriesConCarreras = [
   '3S.01', '3S.02', '3S.03', '3S.04', '3S.05', '3S.06',
   '3S.07', '3S.08', '3S.09', '3S.12', '3S.14', '3S.15',
 ]
+
+test('preserves both function catalogs and all configured subdirections', () => {
+  expect(FUNCIONES_SUSTANTIVAS.map((item) => item.code)).toEqual(['1S', '2S', '3S', '4S', '5S'])
+  expect(FUNCIONES_COMUNES.map((item) => item.code)).toEqual([
+    '1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C',
+  ])
+  expect(SERIES_POR_SUBDIRECCION).toEqual({
+    'Subdirección Académica': ['3S'],
+    'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C'],
+    'Subdirección de Planeación y Vinculación': ['1S', '2S', '5S'],
+    'Subdirección de Extensión y Vinculación': ['4S'],
+  })
+})
 
 test('adds the 11 career folders only to the requested Docencia series', () => {
   expect(docencia).toBeDefined()
