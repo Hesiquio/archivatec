@@ -238,8 +238,7 @@ function perteneceALaSubdireccion(codigo, subdireccion) {
 }
 
 function raicesPermitidasParaSubdireccion(subdireccion, categoria) {
-  const tree = categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
-  return tree.filter(node => perteneceALaSubdireccion(node.code, subdireccion))
+  return categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
 }
 
 function subdireccionParaCodigo(codigo) {
@@ -890,34 +889,28 @@ async function selectSubdir(subdir) {
 
 // ── Nivel 3: Categorías (Sustantivas / Comunes) ───────────────
 function renderCategories(container) {
-  const sustantivas = raicesPermitidasParaSubdireccion(navState.subdir, 'sustantivas')
-  const comunes = raicesPermitidasParaSubdireccion(navState.subdir, 'comunes')
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">${navState.subdir}</h3>
       <p class="section-sub">Selecciona el tipo de funciones</p>
     </div>
     <div class="folder-grid cat-grid">
-      ${sustantivas.length ? `<button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
+      <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
         <span class="folder-icon">📁</span>
         <span class="folder-name">FUNCIONES SUSTANTIVAS</span>
-        <span class="folder-badge">${sustantivas.length} secciones autorizadas</span>
-      </button>` : ''}
-      ${comunes.length ? `<button class="folder-card cat-comun" onclick="selectCategory('comunes')">
+        <span class="folder-badge">${FUNCIONES_SUSTANTIVAS.length} secciones</span>
+      </button>
+      <button class="folder-card cat-comun" onclick="selectCategory('comunes')">
         <span class="folder-icon">📂</span>
         <span class="folder-name">FUNCIONES COMUNES</span>
-        <span class="folder-badge">${comunes.length} secciones autorizadas</span>
-      </button>` : ''}
+        <span class="folder-badge">${FUNCIONES_COMUNES.length} secciones</span>
+      </button>
     </div>`
 }
 
 function selectCategory(cat) {
   if (!['sustantivas', 'comunes'].includes(cat)) {
     toast('Selecciona una categoría válida', 'error')
-    return
-  }
-  if (!raicesPermitidasParaSubdireccion(navState.subdir, cat).length) {
-    toast('Esta subdirección no tiene series autorizadas en esa categoría', 'error')
     return
   }
   navState.category = cat
@@ -927,7 +920,7 @@ function selectCategory(cat) {
 
 // ── Nivel 4+: Carpetas raíz de la categoría ──────────────────
 function renderRootFolders(container) {
-  const list = raicesPermitidasParaSubdireccion(navState.subdir, navState.category)
+  const list = navState.category === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
   const catLabel = navState.category === 'sustantivas' ? 'FUNCIONES SUSTANTIVAS' : 'FUNCIONES COMUNES'
 
   container.innerHTML = `
@@ -1055,7 +1048,7 @@ function folderItemHTML(node) {
 // ── Navegar a un nodo ─────────────────────────────────────────
 function openFolder(code, name, hasChildren) {
   // Buscar el nodo real en el árbol
-  const list = raicesPermitidasParaSubdireccion(navState.subdir, navState.category)
+  const list = navState.category === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
 
   let node = null
   if (navState.path.length === 0) {
