@@ -190,8 +190,9 @@ const YEARS = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
 function buscarNodoPorCodigo(nodes, code) {
   for (const node of nodes) {
     if (node.code === code) return node
-    if (node.children && node.children.length) {
-      const found = buscarNodoPorCodigo(node.children, code)
+    const children = obtenerHijosNodo(node)
+    if (children.length) {
+      const found = buscarNodoPorCodigo(children, code)
       if (found) return found
     }
   }
@@ -206,8 +207,9 @@ function resolveSerieInfo(code) {
   function search(nodes, parentName) {
     for (const node of nodes) {
       if (node.code === code) return { name: node.name, parentName: parentName || null }
-      if (node.children && node.children.length) {
-        const found = search(node.children, node.name)
+      const children = obtenerHijosNodo(node)
+      if (children.length) {
+        const found = search(children, node.name)
         if (found) return found
       }
     }
@@ -323,8 +325,9 @@ function buscarRutaHastaNodo(nodes, targetCode, ruta = []) {
   for (const node of nodes) {
     const nuevaRuta = [...ruta, node]
     if (node.code === targetCode) return nuevaRuta
-    if (node.children && node.children.length) {
-      const encontrada = buscarRutaHastaNodo(node.children, targetCode, nuevaRuta)
+    const children = obtenerHijosNodo(node)
+    if (children.length) {
+      const encontrada = buscarRutaHastaNodo(children, targetCode, nuevaRuta)
       if (encontrada) return encontrada
     }
   }
@@ -975,7 +978,8 @@ async function loadDigitalizaciones(expedienteId, containerId) {
 
 // ── Renderiza hijos de un nodo ────────────────────────────────
 function renderFolderChildren(container, node) {
-  if (!node.children || node.children.length === 0) {
+  const children = obtenerHijosNodo(node)
+  if (children.length === 0) {
     // Usamos el código de la serie como ID de expediente para la demo/prototipo
     const expedienteId = node.code 
     const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
@@ -1009,7 +1013,7 @@ function renderFolderChildren(container, node) {
     </div>
     ${directUploadTitle ? panelCargaSerie(node, directUploadTitle) : ''}
     <div class="folder-list">
-      ${node.children.map(child => folderItemHTML(child)).join('')}
+      ${children.map(child => folderItemHTML(child)).join('')}
     </div>`
   if (directUploadTitle) {
     const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
@@ -1034,7 +1038,7 @@ function panelCargaSerie(node, titulo) {
 
 // ── HTML de un ítem de carpeta ────────────────────────────────
 function folderItemHTML(node) {
-  const hasChildren = node.children && node.children.length > 0
+  const hasChildren = obtenerHijosNodo(node).length > 0
   const icon = hasChildren ? '📁' : '📄'
   const arrow = hasChildren ? '<span class="folder-arrow">›</span>' : ''
   return `
@@ -1057,7 +1061,7 @@ function openFolder(code, name, hasChildren) {
     node = list.find(n => n.code === code)
   } else {
     const parent = navState.path[navState.path.length - 1]
-    node = (parent.children || []).find(n => n.code === code)
+    node = obtenerHijosNodo(parent).find(n => n.code === code)
   }
 
   if (!node) return

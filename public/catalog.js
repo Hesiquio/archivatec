@@ -29,11 +29,32 @@ const CARRERAS_DOCENCIA = [
   'Ingeniería en Inteligencia Artificial',
 ]
 
+const SERIES_DOCENCIA_CON_CARRERAS = new Set([
+  '3S.01', '3S.02', '3S.03', '3S.04', '3S.05', '3S.06',
+  '3S.07', '3S.08', '3S.09', '3S.12', '3S.14', '3S.15',
+])
+
 function subseriesCarreras(codigoSerie, primerIndice = 1) {
   return CARRERAS_DOCENCIA.map((nombre, index) => ({
     code: `${codigoSerie}.${String(index + primerIndice).padStart(2, '0')}`,
     name: nombre,
   }))
+}
+
+function subseriesDocencia(codigoSerie) {
+  if (!SERIES_DOCENCIA_CON_CARRERAS.has(codigoSerie)) return []
+  if (codigoSerie === '3S.14') {
+    return [
+      { code: '3S.14.01', name: 'Proyectos Individuales' },
+      ...subseriesCarreras('3S.14', 2),
+    ]
+  }
+  return subseriesCarreras(codigoSerie)
+}
+
+function obtenerHijosNodo(node) {
+  if (SERIES_DOCENCIA_CON_CARRERAS.has(node.code)) return subseriesDocencia(node.code)
+  return node.children || []
 }
 
 const FUNCIONES_SUSTANTIVAS = [
@@ -97,29 +118,26 @@ const FUNCIONES_SUSTANTIVAS = [
     code: '3S',
     name: 'DOCENCIA',
     children: [
-      { code: '3S.01', name: 'Crédito Complementario', children: subseriesCarreras('3S.01') },
-      { code: '3S.02', name: 'Curso de verano', children: subseriesCarreras('3S.02') },
-      { code: '3S.03', name: 'Salida lateral', children: subseriesCarreras('3S.03') },
-      { code: '3S.04', name: 'Estancia', children: subseriesCarreras('3S.04') },
-      { code: '3S.05', name: 'Residencia', children: subseriesCarreras('3S.05') },
-      { code: '3S.06', name: 'Titulación', children: subseriesCarreras('3S.06') },
-      { code: '3S.07', name: 'Academia', children: subseriesCarreras('3S.07') },
-      { code: '3S.08', name: 'Comité Académico', children: subseriesCarreras('3S.08') },
-      { code: '3S.09', name: 'Especialidad', children: subseriesCarreras('3S.09') },
+      { code: '3S.01', name: 'Crédito Complementario', children: subseriesDocencia('3S.01') },
+      { code: '3S.02', name: 'Curso de verano', children: subseriesDocencia('3S.02') },
+      { code: '3S.03', name: 'Salida lateral', children: subseriesDocencia('3S.03') },
+      { code: '3S.04', name: 'Estancia', children: subseriesDocencia('3S.04') },
+      { code: '3S.05', name: 'Residencia', children: subseriesDocencia('3S.05') },
+      { code: '3S.06', name: 'Titulación', children: subseriesDocencia('3S.06') },
+      { code: '3S.07', name: 'Academia', children: subseriesDocencia('3S.07') },
+      { code: '3S.08', name: 'Comité Académico', children: subseriesDocencia('3S.08') },
+      { code: '3S.09', name: 'Especialidad', children: subseriesDocencia('3S.09') },
       { code: '3S.10', name: 'Posgrados' },
       { code: '3S.11', name: 'Investigación' },
-      { code: '3S.12', name: 'Acreditación', children: subseriesCarreras('3S.12') },
+      { code: '3S.12', name: 'Acreditación', children: subseriesDocencia('3S.12') },
       { code: '3S.13', name: 'Estructura educativa' },
       {
         code: '3S.14',
         name: 'Gestión del curso',
         directUploadTitle: 'Información general de gestión del curso',
-        children: [
-          { code: '3S.14.01', name: 'Proyectos Individuales' },
-          ...subseriesCarreras('3S.14', 2),
-        ],
+        children: subseriesDocencia('3S.14'),
       },
-      { code: '3S.15', name: 'Eventos académicos', children: subseriesCarreras('3S.15') },
+      { code: '3S.15', name: 'Eventos académicos', children: subseriesDocencia('3S.15') },
       {
         code: '3S.16',
         name: 'Evaluación al desempeño del docente',

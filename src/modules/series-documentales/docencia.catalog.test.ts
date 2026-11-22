@@ -3,17 +3,21 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 
 const catalogSource = readFileSync(new URL('../../../public/catalog.js', import.meta.url), 'utf8')
-const { FUNCIONES_SUSTANTIVAS, CARRERAS_DOCENCIA } = JSON.parse(JSON.stringify(runInNewContext(
-  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, CARRERAS_DOCENCIA })`,
-))) as {
+const catalogContext = runInNewContext(
+  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
+)
+const { FUNCIONES_SUSTANTIVAS, CARRERAS_DOCENCIA } = JSON.parse(JSON.stringify(catalogContext)) as {
   FUNCIONES_SUSTANTIVAS: CatalogNode[]
   CARRERAS_DOCENCIA: string[]
 }
+const obtenerHijosNodo = (node: CatalogNode) =>
+  JSON.parse(JSON.stringify(catalogContext.obtenerHijosNodo(node))) as CatalogNode[]
 
 type CatalogNode = {
   code: string
   name: string
   directUploadTitle?: string
+  year?: number
   children?: CatalogNode[]
 }
 
@@ -44,4 +48,24 @@ test('keeps direct course-management documents separate from projects and career
   expect(gestion?.children?.slice(1).map((child) => child.code)).toEqual(
     CARRERAS_DOCENCIA.map((_, index) => `3S.14.${String(index + 2).padStart(2, '0')}`),
   )
+})
+
+test('resolves Docencia subfolders by code even when a node has no children', () => {
+  const series = docencia?.children || []
+
+  for (const year of Array.from({ length: 11 }, (_, index) => 2016 + index)) {
+    for (const code of seriesConCarreras) {
+      const node = series.find((item) => item.code === code)
+      expect(node).toBeDefined()
+
+      const children = obtenerHijosNodo({ ...node!, children: undefined, year })
+      if (code === '3S.14') {
+        expect(children[0]).toEqual({ code: '3S.14.01', name: 'Proyectos Individuales' })
+        expect(children.slice(1).map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+        continue
+      }
+
+      expect(children.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+    }
+  }
 })
