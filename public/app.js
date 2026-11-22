@@ -932,11 +932,11 @@ function renderFolderChildren(container, node) {
     <div class="section-header">
       <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
     </div>
-    ${node.code === '3S.14' ? panelCargaSerie(node, 'Información general de gestión del curso') : ''}
+    ${node.directUploadTitle ? panelCargaSerie(node, node.directUploadTitle) : ''}
     <div class="folder-list">
       ${node.children.map(child => folderItemHTML(child)).join('')}
     </div>`
-  if (node.code === '3S.14') {
+  if (node.directUploadTitle) {
     const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
     setTimeout(() => loadDigitalizaciones(node.code, containerId), 100)
   }

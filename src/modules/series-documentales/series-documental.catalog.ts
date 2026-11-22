@@ -29,6 +29,25 @@ const SERIES_POR_SUBDIRECCION: Record<string, readonly string[]> = {
   'Subdirección de Extensión': ['4S'],
 }
 
+const SERIES_DOCENCIA_CON_CARRERAS = new Set([
+  '3S.01', '3S.02', '3S.03', '3S.04', '3S.05', '3S.06',
+  '3S.07', '3S.08', '3S.09', '3S.12', '3S.14', '3S.15',
+])
+
+const CARRERAS_DOCENCIA = [
+  'Licenciatura en Administración',
+  'Ingeniería en Sistemas Computacionales',
+  'Ingeniería en Industrias Alimentarias',
+  'Gastronomía',
+  'Ingeniería en Energías Renovables',
+  'Licenciatura en Turismo',
+  'Ingeniería en Animación Digital y Efectos Visuales',
+  'Contador Público',
+  'Licenciatura en Administración Modalidad Mixta',
+  'Ingeniería Ferroviaria',
+  'Ingeniería en Inteligencia Artificial',
+] as const
+
 export type SubdireccionSerie = typeof SUBDIRECCIONES_SERIES[number]
 
 export function getPrefijosPermitidos(subdireccion: string): readonly string[] | undefined {
@@ -46,6 +65,15 @@ export function obtenerSubdireccionPorCodigo(codigo: string): SubdireccionSerie 
   return SUBDIRECCIONES_SERIES.find((subdireccion) =>
     SERIES_POR_SUBDIRECCION[subdireccion].includes(prefijo || ''),
   )
+}
+
+export function obtenerCarreraDocenciaPorCodigo(codigo: string): string | undefined {
+  const match = codigo.match(/^(3S\.\d{2})\.(\d{2})$/)
+  if (!match || !SERIES_DOCENCIA_CON_CARRERAS.has(match[1])) return undefined
+
+  const offset = match[1] === '3S.14' ? 2 : 1
+  const index = Number(match[2]) - offset
+  return CARRERAS_DOCENCIA[index]
 }
 
 export function categoriaDePrefijo(prefijo: string): 'sustantivas' | 'comunes' | undefined {

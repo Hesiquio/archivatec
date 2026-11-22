@@ -113,6 +113,7 @@ const FUNCIONES_SUSTANTIVAS = [
       {
         code: '3S.14',
         name: 'Gestión del curso',
+        directUploadTitle: 'Información general de gestión del curso',
         children: [
           { code: '3S.14.01', name: 'Proyectos Individuales' },
           ...subseriesCarreras('3S.14', 2),

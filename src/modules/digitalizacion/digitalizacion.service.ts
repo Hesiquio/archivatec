@@ -4,6 +4,7 @@ import { eq, and, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { DigitalizacionDTO, ActualizarEstadoDTO, DigitalizacionQueryDTO } from './digitalizacion.schema'
 import { deriveFileName } from '../../infrastructure/storage/supabase-storage'
+import { obtenerCarreraDocenciaPorCodigo } from '../series-documentales/series-documental.catalog'
 
 export class DigitalizacionService {
   async listar(query: DigitalizacionQueryDTO) {
@@ -57,6 +58,7 @@ export class DigitalizacionService {
   async iniciar(data: DigitalizacionDTO, operadorId: string) {
     let expId: string | null = null
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.expedienteId)
+    const carrera = obtenerCarreraDocenciaPorCodigo(data.expedienteId)
 
     if (isUuid) {
       const [exp] = await db.select({ id: expedientes.id }).from(expedientes).where(eq(expedientes.id, data.expedienteId)).limit(1)
@@ -97,7 +99,8 @@ export class DigitalizacionService {
         tipoExpediente: 'ADMINISTRATIVO', // Valor de enum válido
         fechaIngreso: new Date(),
         cajaId: cj.id,
-        estado: 'DIGITALIZADO'
+        estado: 'DIGITALIZADO',
+        carrera: carrera ?? null,
       }).returning()
       
       expId = newExp.id
@@ -115,7 +118,11 @@ export class DigitalizacionService {
 
     await db
       .update(expedientes)
-      .set({ digitalizadoUrl: data.urlArchivo, estado: 'DIGITALIZADO' })
+      .set({
+        digitalizadoUrl: data.urlArchivo,
+        estado: 'DIGITALIZADO',
+        ...(carrera ? { carrera } : {}),
+      })
       .where(eq(expedientes.id, expId))
 
     return nueva

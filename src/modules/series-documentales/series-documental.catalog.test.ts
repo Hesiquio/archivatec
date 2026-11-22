@@ -3,6 +3,7 @@ import {
   categoriaDePrefijo,
   esPrefijoCatalogado,
   getPrefijosPermitidos,
+  obtenerCarreraDocenciaPorCodigo,
   obtenerSubdireccionPorCodigo,
 } from './series-documental.catalog'
 
@@ -24,4 +25,13 @@ test('assigns codes by their complete root prefix and derives the category', () 
   expect(categoriaDePrefijo('10C')).toBe('comunes')
   expect(esPrefijoCatalogado('6C')).toBe(true)
   expect(esPrefijoCatalogado('6S')).toBe(false)
+})
+
+test('maps only configured Docencia career subseries to their career', () => {
+  expect(obtenerCarreraDocenciaPorCodigo('3S.01.01')).toBe('Licenciatura en Administración')
+  expect(obtenerCarreraDocenciaPorCodigo('3S.14.02')).toBe('Licenciatura en Administración')
+  expect(obtenerCarreraDocenciaPorCodigo('3S.14.12')).toBe('Ingeniería en Inteligencia Artificial')
+  expect(obtenerCarreraDocenciaPorCodigo('3S.14.01')).toBeUndefined()
+  expect(obtenerCarreraDocenciaPorCodigo('3S.10.01')).toBeUndefined()
+  expect(obtenerCarreraDocenciaPorCodigo('3S.15.12')).toBeUndefined()
 })
