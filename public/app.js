@@ -1405,25 +1405,115 @@ function openNuevoUsuarioModal() {
   }
 }
 
-// ─── Construye las <option> del selector "Carpeta padre", indentadas por
-// profundidad. Marca con ⚠ los nodos hoy terminales (sin hijos): elegirlos
-// como padre los convierte en carpeta y oculta cualquier documento ya
-// archivado ahí (ver aviso fijo en el modal).
+// ─── Construye las opciones jerárquicas de "Carpeta padre".
 function construirOpcionesCarpetaPadre(nodes, depth = 0) {
   let html = ''
   for (const node of nodes) {
-    const prefix = '    '.repeat(depth)
-    html += `<option value="${escapeHtml(node.code)}">${prefix}${escapeHtml(node.code)} — ${escapeHtml(node.name)}</option>`
-    if (node.children && node.children.length) html += construirOpcionesCarpetaPadre(node.children, depth + 1)
+    const children = obtenerHijosNodo(node)
+    const level = depth === 0 ? 'Sección' : `Nivel ${depth + 1}`
+    html += `
+      <button
+        type="button"
+        class="series-parent-option${depth === 0 ? ' is-section' : ''}"
+        role="option"
+        aria-selected="false"
+        data-parent-code="${escapeHtml(node.code)}"
+        data-parent-label="${escapeHtml(`${node.code} — ${node.name}`)}"
+        style="--tree-indent:${depth * 14}px">
+        <span class="series-parent-level">${level}</span>
+        <span class="series-parent-code">${escapeHtml(node.code)}</span>
+        <span class="series-parent-name">${escapeHtml(node.name)}</span>
+      </button>`
+    if (children.length) html += construirOpcionesCarpetaPadre(children, depth + 1)
   }
   return html
 }
 
 function poblarSelectCarpetaPadre(categoria) {
-  const sel = document.getElementById('m-serie-padre')
-  if (!sel) return
+  const field = document.getElementById('m-serie-padre')
+  const selectedLabel = document.getElementById('m-serie-padre-selected')
+  const options = document.getElementById('m-serie-padre-options')
+  if (!field || !selectedLabel || !options) return
+
   const tree = categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
-  sel.innerHTML = `<option value="">— Nivel raíz (sin carpeta padre) —</option>` + construirOpcionesCarpetaPadre(tree)
+  field.value = ''
+  selectedLabel.textContent = '— Nivel raíz (sin carpeta padre) —'
+  options.innerHTML = `
+    <button
+      type="button"
+      class="series-parent-option is-section"
+      role="option"
+      aria-selected="true"
+      data-parent-code=""
+      data-parent-label="— Nivel raíz (sin carpeta padre) —">
+      <span class="series-parent-level">Ubicación</span>
+      <span class="series-parent-name">Nivel raíz (sin carpeta padre)</span>
+    </button>` + construirOpcionesCarpetaPadre(tree)
+}
+
+function configurarSelectorCarpetaPadre() {
+  const picker = document.getElementById('m-serie-padre-picker')
+  const field = document.getElementById('m-serie-padre')
+  const trigger = document.getElementById('m-serie-padre-trigger')
+  const options = document.getElementById('m-serie-padre-options')
+  const selectedLabel = document.getElementById('m-serie-padre-selected')
+  if (!picker || !field || !trigger || !options || !selectedLabel) return
+
+  const closeOptions = () => {
+    options.classList.add('hidden')
+    trigger.setAttribute('aria-expanded', 'false')
+  }
+  const openOptions = () => {
+    options.classList.remove('hidden')
+    trigger.setAttribute('aria-expanded', 'true')
+  }
+
+  trigger.addEventListener('click', () => {
+    if (trigger.getAttribute('aria-expanded') === 'true') closeOptions()
+    else openOptions()
+  })
+  trigger.addEventListener('keydown', event => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    event.preventDefault()
+    openOptions()
+    const selected = options.querySelector('[aria-selected="true"]')
+    ;(selected || options.querySelector('[data-parent-code]'))?.focus()
+  })
+  options.addEventListener('click', event => {
+    const option = event.target.closest('[data-parent-code]')
+    if (!option) return
+    field.value = option.dataset.parentCode
+    selectedLabel.textContent = option.dataset.parentLabel
+    options.querySelectorAll('[data-parent-code]').forEach(item => {
+      item.setAttribute('aria-selected', String(item === option))
+    })
+    closeOptions()
+    trigger.focus()
+  })
+  options.addEventListener('keydown', event => {
+    const items = [...options.querySelectorAll('[data-parent-code]')]
+    const index = items.indexOf(document.activeElement)
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeOptions()
+      trigger.focus()
+    } else if (event.key === 'ArrowDown' && index < items.length - 1) {
+      event.preventDefault()
+      items[index + 1].focus()
+    } else if (event.key === 'ArrowUp' && index > 0) {
+      event.preventDefault()
+      items[index - 1].focus()
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      items[0]?.focus()
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      items[items.length - 1]?.focus()
+    }
+  })
+  picker.addEventListener('focusout', event => {
+    if (!picker.contains(event.relatedTarget)) closeOptions()
+  })
 }
 
 // ─── Puebla el selector de "Encargado" del modal de creación de series con
@@ -1452,47 +1542,83 @@ document.getElementById('btn-config-series').onclick = async () => {
   if (!_seriesDinamicasCargadas) await fetchYFusionarSeriesDinamicas()
 
   openModal('Creación de Series Documentales', `
-    <div class="field-group">
-      <label>Nombre de la serie</label>
-      <input id="m-serie-nombre" maxlength="200" required placeholder="Ej. Actas de Junta Directiva" />
-    </div>
-    <div class="field-group">
-      <label>Código de la serie</label>
-      <input id="m-codigo" maxlength="30" required pattern="[A-Za-z0-9.-]+" placeholder="Ej. 1S.15" />
-    </div>
-    <div class="field-group">
-      <label>Categoría</label>
-      <select id="m-serie-categoria">
-        <option value="sustantivas">Funciones Sustantivas</option>
-        <option value="comunes">Funciones Comunes</option>
-      </select>
-    </div>
-    <div class="field-group">
-      <label>Carpeta padre (opcional)</label>
-      <select id="m-serie-padre"></select>
-      <p style="color:var(--orange); font-size:12px; margin-top:6px;">
-        ⚠ Si la carpeta que elijas como padre ya tiene documentos digitalizados, esos
-        documentos no se borran, pero dejarán de verse en Registros porque esa carpeta pasará
-        a mostrar subcarpetas en lugar de sus documentos.
-      </p>
-    </div>
-    <div class="field-group">
-      <label>Encargado de la subdivisión</label>
-      <select id="m-serie-encargado"><option value="">Cargando usuarios...</option></select>
-      <div id="m-serie-encargado-preview" style="display:none; margin-top:8px;"></div>
-    </div>
-    <div class="field-group">
-      <label>Fecha de creación</label>
-      <input type="date" id="m-fcreacion" />
-    </div>
-    <div class="field-group">
-      <label>Fecha de vencimiento</label>
-      <input type="date" id="m-fvencimiento" />
+    <div class="series-form">
+      <section class="series-form-section">
+        <h4 class="series-form-section-title">Identificación de la serie</h4>
+        <div class="series-form-grid">
+          <div class="field-group">
+            <label for="m-serie-nombre">Nombre de la serie</label>
+            <input id="m-serie-nombre" maxlength="200" required placeholder="Ej. Actas de Junta Directiva" />
+          </div>
+          <div class="field-group">
+            <label for="m-codigo">Código de la serie</label>
+            <input id="m-codigo" maxlength="30" required pattern="[A-Za-z0-9.-]+" placeholder="Ej. 1S.15" />
+          </div>
+        </div>
+      </section>
+
+      <section class="series-form-section">
+        <h4 class="series-form-section-title">Ubicación en el árbol</h4>
+        <div class="series-form-grid">
+          <div class="field-group">
+            <label for="m-serie-categoria">Categoría</label>
+            <select id="m-serie-categoria">
+              <option value="sustantivas">Funciones Sustantivas</option>
+              <option value="comunes">Funciones Comunes</option>
+            </select>
+          </div>
+          <div class="field-group series-form-grid-full">
+            <label for="m-serie-padre-trigger">Carpeta padre (opcional)</label>
+            <div class="series-parent-picker" id="m-serie-padre-picker">
+              <input type="hidden" id="m-serie-padre" value="" />
+              <button
+                type="button"
+                class="series-parent-trigger"
+                id="m-serie-padre-trigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-controls="m-serie-padre-options">
+                <span id="m-serie-padre-selected">— Nivel raíz (sin carpeta padre) —</span>
+                <span class="series-parent-trigger-icon" aria-hidden="true">⌄</span>
+              </button>
+              <div
+                class="series-parent-options hidden"
+                id="m-serie-padre-options"
+                role="listbox"
+                aria-label="Carpetas padre disponibles"></div>
+            </div>
+            <p class="series-form-warning">
+              <span aria-hidden="true">⚠</span>
+              <span>Si la carpeta que elijas como padre ya tiene documentos digitalizados, esos documentos no se borran, pero dejarán de verse en Registros porque esa carpeta pasará a mostrar subcarpetas en lugar de sus documentos.</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="series-form-section">
+        <h4 class="series-form-section-title">Asignación y vigencia</h4>
+        <div class="series-form-grid">
+          <div class="field-group series-form-grid-full">
+            <label for="m-serie-encargado">Encargado de la subdivisión</label>
+            <select id="m-serie-encargado"><option value="">Cargando usuarios...</option></select>
+            <div id="m-serie-encargado-preview" style="display:none; margin-top:8px;"></div>
+          </div>
+          <div class="field-group">
+            <label for="m-fcreacion">Fecha de creación</label>
+            <input type="date" id="m-fcreacion" />
+          </div>
+          <div class="field-group">
+            <label for="m-fvencimiento">Fecha de vencimiento</label>
+            <input type="date" id="m-fvencimiento" />
+          </div>
+        </div>
+      </section>
     </div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
      <button class="btn btn-purple" id="btn-save-serie">Crear Serie</button>`)
 
   poblarSelectCarpetaPadre('sustantivas')
+  configurarSelectorCarpetaPadre()
   document.getElementById('m-serie-categoria').onchange = e => poblarSelectCarpetaPadre(e.target.value)
 
   await poblarSelectEncargadoSerie()
