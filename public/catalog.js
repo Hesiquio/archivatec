@@ -53,8 +53,8 @@ function subseriesDocencia(codigoSerie) {
 }
 
 function obtenerHijosNodo(node) {
-  if (node.code === '3S.15') return subseriesCarreras(node.code)
-  if (SERIES_DOCENCIA_CON_CARRERAS.has(node.code)) return subseriesDocencia(node.code)
+  const children = subseriesDocencia(node.code)
+  if (children.length > 0) return children
   return node.children || []
 }
 
