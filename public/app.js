@@ -978,7 +978,8 @@ async function loadDigitalizaciones(expedienteId, containerId) {
 
 // ── Renderiza hijos de un nodo ────────────────────────────────
 function renderFolderChildren(container, node) {
-  const children = obtenerHijosNodo(node)
+  let children = obtenerHijosNodo(node)
+  if (children.length === 0) children = subseriesDocencia(node.code)
   if (children.length === 0) {
     // Usamos el código de la serie como ID de expediente para la demo/prototipo
     const expedienteId = node.code 
