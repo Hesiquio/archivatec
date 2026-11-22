@@ -928,15 +928,17 @@ function renderFolderChildren(container, node) {
     return
   }
 
+  const directUploadTitle = node.directUploadTitle
+    || (node.code === '3S.14' ? 'Información general de gestión del curso' : null)
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
     </div>
-    ${node.directUploadTitle ? panelCargaSerie(node, node.directUploadTitle) : ''}
+    ${directUploadTitle ? panelCargaSerie(node, directUploadTitle) : ''}
     <div class="folder-list">
       ${node.children.map(child => folderItemHTML(child)).join('')}
     </div>`
-  if (node.directUploadTitle) {
+  if (directUploadTitle) {
     const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
     setTimeout(() => loadDigitalizaciones(node.code, containerId), 100)
   }
