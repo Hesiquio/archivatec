@@ -11,6 +11,19 @@ export const DigitalizacionSchema = z.object({
   observaciones: z.string().optional(),
 })
 
+export const PrepararSubidaSchema = z.object({
+  fileName: z.string().trim().min(1).max(255).regex(/^.+\.pdf$/i, 'El archivo debe ser un PDF'),
+  contentType: z.literal('application/pdf'),
+})
+
+export const CompletarSubidaSchema = z.object({
+  path: z.string().regex(
+    /^digitalizados\/[A-Za-z0-9.-]{1,100}\/\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-[a-z0-9-]+\.pdf$/i,
+    'Ruta de archivo inválida',
+  ),
+  checksumSha256: z.string().regex(/^[0-9a-f]{64}$/i, 'El checksum SHA-256 debe tener exactamente 64 caracteres hexadecimales'),
+})
+
 export const ActualizarEstadoSchema = z.object({
   estado: z.enum(['EN_PROCESO', 'COMPLETADO', 'FALLIDO', 'VERIFICADO']),
   observaciones: z.string().optional(),
@@ -23,5 +36,7 @@ export const DigitalizacionQuerySchema = z.object({
 })
 
 export type DigitalizacionDTO = z.infer<typeof DigitalizacionSchema>
+export type PrepararSubidaDTO = z.infer<typeof PrepararSubidaSchema>
+export type CompletarSubidaDTO = z.infer<typeof CompletarSubidaSchema>
 export type ActualizarEstadoDTO = z.infer<typeof ActualizarEstadoSchema>
 export type DigitalizacionQueryDTO = z.infer<typeof DigitalizacionQuerySchema>

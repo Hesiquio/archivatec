@@ -4,18 +4,23 @@ import {
   DigitalizacionSchema,
   ActualizarEstadoSchema,
   DigitalizacionQuerySchema,
+  PrepararSubidaSchema,
+  CompletarSubidaSchema,
   type DigitalizacionDTO,
   type ActualizarEstadoDTO,
   type DigitalizacionQueryDTO,
+  type PrepararSubidaDTO,
+  type CompletarSubidaDTO,
 } from './digitalizacion.schema'
 import { validateBody, validateQuery } from '../../middleware/validator.middleware'
 import { authMiddleware } from '../../middleware/auth.middleware'
-import { requireRole } from '../../middleware/rbac.middleware'
+import { requirePermission, requireRole } from '../../middleware/rbac.middleware'
 import { HTTPException } from 'hono/http-exception'
 
 import { storageService } from '../../infrastructure/storage/supabase-storage'
 import { sanitizeStorageFileName } from '../../infrastructure/storage/file-name'
 import { env } from '../../config/env'
+import { randomUUID } from 'node:crypto'
 
 export const digitalizacionRoutes = new Hono()
 
@@ -40,69 +45,85 @@ digitalizacionRoutes.get('/:id', async (c) => {
   return c.json({ success: true, data: result })
 })
 
-// Subir un PDF para un expediente
-digitalizacionRoutes.post('/upload/:expedienteId', requireRole('DIGITALIZADOR', 'ARCHIVISTA', 'ADMIN'), async (c) => {
-  try {
+// Emitir una URL temporal para subir directamente a Supabase Storage sin
+// transportar el contenido del PDF por la función serverless de Vercel.
+digitalizacionRoutes.post(
+  '/upload-url/:expedienteId',
+  requireRole('DIGITALIZADOR', 'ARCHIVISTA', 'ADMIN'),
+  requirePermission('subirArchivos'),
+  validateBody(PrepararSubidaSchema),
+  async (c) => {
+    const body = c.req.valid('json') as PrepararSubidaDTO
+    const expedienteId = c.req.param('expedienteId')
+    if (!/^[A-Za-z0-9.-]{1,100}$/.test(expedienteId)) {
+      throw new HTTPException(422, { message: 'El identificador del expediente no es válido para Storage' })
+    }
+
+    const safeFileName = sanitizeStorageFileName(body.fileName)
+    const uniquePrefix = `${Date.now()}-${randomUUID()}-`
+    const fileStem = safeFileName.slice(0, -4).slice(0, 187)
+    const path = `digitalizados/${expedienteId}/${uniquePrefix}${fileStem}.pdf`
+
+    try {
+      const token = await storageService.createSignedUploadUrl(env.STORAGE_BUCKET, path)
+      return c.json({
+        success: true,
+        data: { bucket: env.STORAGE_BUCKET, path, token },
+      })
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'Error desconocido'
+      console.error('Error al crear URL firmada de Supabase Storage:', error)
+      throw new HTTPException(502, {
+        message: `No se pudo preparar la subida en el bucket "${env.STORAGE_BUCKET}": ${detail}`,
+      })
+    }
+  },
+)
+
+// Registrar los metadatos cuando el cliente confirma que Storage recibió el PDF.
+digitalizacionRoutes.post(
+  '/upload/:expedienteId',
+  requireRole('DIGITALIZADOR', 'ARCHIVISTA', 'ADMIN'),
+  requirePermission('subirArchivos'),
+  validateBody(CompletarSubidaSchema),
+  async (c) => {
+    const { path, checksumSha256 } = c.req.valid('json') as CompletarSubidaDTO
     const expedienteId = c.req.param('expedienteId')
     const user = c.get('user')
-    
-    const body = await c.req.parseBody()
-    const file = body['file'] as any
-    
-    if (!file || !(file instanceof File)) {
-      return c.json({ success: false, error: 'No se recibió un archivo válido' }, 400)
+
+    if (!path.startsWith(`digitalizados/${expedienteId}/`)) {
+      throw new HTTPException(422, { message: 'El archivo no corresponde a la carpeta seleccionada' })
     }
 
-    if (file.type !== 'application/pdf') {
-      return c.json({ success: false, error: 'Solo se permiten archivos PDF' }, 400)
-    }
-
-    const MAX_SIZE = 4 * 1024 * 1024 // 4MB — límite de Vercel Serverless
-    if (file.size > MAX_SIZE) {
-      return c.json({ success: false, error: 'El archivo no puede superar 4MB' }, 400)
-    }
-
-    const fileName = `${Date.now()}-${sanitizeStorageFileName(file.name)}`
-    const filePath = `digitalizados/${fileName}`
-    
-    // 1. Subida a Storage
-    let publicUrl = ''
+    let archivoExiste: boolean
+    let publicUrl: string
     try {
-      const bytes = await file.arrayBuffer()
-      publicUrl = await storageService.uploadFile(env.STORAGE_BUCKET, filePath, bytes, 'application/pdf')
-    } catch (storageErr: any) {
-      console.error('Error en Supabase Storage:', storageErr)
-      return c.json({ 
-        success: false, 
-        error: `Error al guardar en la nube: ${storageErr.message || 'Verifica que el bucket \"expedientes\" sea público'}` 
-      }, 500)
-    }
-    
-    // 2. Registro en Base de Datos
-    try {
-      const result = await digitalizacionService.iniciar({
-        expedienteId,
-        urlArchivo: publicUrl,
-        totalPaginas: 1, 
-        checksumSha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        resolucionDpi: 300,
-        formatoArchivo: 'PDF'
-      }, user.sub)
-      
-      return c.json({ success: true, data: result })
-    } catch (dbErr: any) {
-      console.error('Error en Base de Datos:', dbErr)
-      return c.json({ 
-        success: false, 
-        error: `Archivo subido, pero no se pudo registrar en la BD: ${dbErr.message}` 
-      }, 500)
+      archivoExiste = await storageService.fileExists(env.STORAGE_BUCKET, path)
+      publicUrl = storageService.getPublicUrl(env.STORAGE_BUCKET, path)
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'Error desconocido'
+      console.error('Error al verificar el PDF en Supabase Storage:', error)
+      throw new HTTPException(502, {
+        message: `No se pudo verificar el archivo en el bucket "${env.STORAGE_BUCKET}": ${detail}`,
+      })
     }
 
-  } catch (globalErr: any) {
-    console.error('Error crítico en subida:', globalErr)
-    return c.json({ success: false, error: `Error interno: ${globalErr.message}` }, 500)
-  }
-})
+    if (!archivoExiste) {
+      throw new HTTPException(422, { message: 'El PDF todavía no existe en Supabase Storage; vuelve a intentar la subida' })
+    }
+
+    const result = await digitalizacionService.iniciar({
+      expedienteId,
+      urlArchivo: publicUrl,
+      totalPaginas: 1,
+      checksumSha256,
+      resolucionDpi: 300,
+      formatoArchivo: 'PDF',
+    }, user.sub)
+
+    return c.json({ success: true, data: result }, 201)
+  },
+)
 
 // Iniciar una nueva digitalización (Crea el registro y asocia al expediente)
 digitalizacionRoutes.post(

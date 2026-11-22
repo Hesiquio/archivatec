@@ -2,6 +2,67 @@
 const API = '/api/v1'
 let token = localStorage.getItem('token') || ''
 let currentUser = null
+let supabaseStorageBootstrapPromise
+
+async function getSupabaseStorage() {
+  if (!window.supabase?.createClient) {
+    throw new Error('No está disponible el cliente de Supabase Storage')
+  }
+
+  if (!supabaseStorageBootstrapPromise) {
+    supabaseStorageBootstrapPromise = (async () => {
+      const response = await fetch('/api/config')
+      const config = await response.json().catch(() => ({}))
+      if (!response.ok || !config.supabaseUrl || !config.supabaseAnonKey) {
+        throw new Error('Falta configurar SUPABASE_URL o SUPABASE_ANON_KEY en el backend')
+      }
+
+      return {
+        config,
+        client: window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey),
+      }
+    })().catch((error) => {
+      supabaseStorageBootstrapPromise = undefined
+      throw error
+    })
+  }
+
+  return supabaseStorageBootstrapPromise
+}
+
+function uploadPdfResumable(file, bucket, path, uploadToken, config) {
+  if (!window.tus?.Upload) {
+    throw new Error('No está disponible el cliente de carga reanudable de Supabase')
+  }
+
+  const storageUrl = new URL(config.supabaseUrl)
+  if (storageUrl.hostname.endsWith('.supabase.co')) {
+    storageUrl.hostname = storageUrl.hostname.replace('.supabase.co', '.storage.supabase.co')
+  }
+
+  return new Promise((resolve, reject) => {
+    const upload = new window.tus.Upload(file, {
+      endpoint: `${storageUrl.origin}/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: {
+        apikey: config.supabaseAnonKey,
+        'x-signature': uploadToken,
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      chunkSize: 6 * 1024 * 1024,
+      metadata: {
+        bucketName: bucket,
+        objectName: path,
+        contentType: 'application/pdf',
+      },
+      onError: reject,
+      onSuccess: resolve,
+    })
+
+    upload.start()
+  })
+}
 
 // ─── GESTIÓN DE PDF ───────────────────────────────────────────
 function openPdfModal(title, url) {
@@ -24,43 +85,55 @@ function closePdfModal() {
 async function handleFileUpload(expedienteId, callback) {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = 'application/pdf'
+  input.accept = '.pdf,application/pdf'
 
-  input.onchange = async (e) => {
-    const file = e.target.files[0]
+  input.onchange = async (event) => {
+    const file = event.target.files[0]
     if (!file) return
 
-    const formData = new FormData()
-    formData.append('file', file)
-
     try {
-      toast('Subiendo archivo...', 'info')
-      const response = await fetch(`${API}/digitalizacion/upload/${expedienteId}`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: formData
+      if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== 'application/pdf')) {
+        throw new Error('Selecciona un archivo PDF válido')
+      }
+
+      const signature = await file.slice(0, 5).text()
+      if (signature !== '%PDF-') throw new Error('El archivo seleccionado no tiene formato PDF')
+      if (!crypto.subtle) throw new Error('Este navegador no permite verificar la integridad del PDF')
+
+      toast('Preparando archivo...', 'info')
+      const checksumBytes = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+      const checksumSha256 = Array.from(new Uint8Array(checksumBytes))
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('')
+
+      const upload = await api('POST', `/digitalizacion/upload-url/${encodeURIComponent(expedienteId)}`, {
+        fileName: file.name,
+        contentType: 'application/pdf',
       })
 
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const res = await response.json()
-        if (res.success) {
-          toast('Archivo subido correctamente', 'success')
-          if (callback) callback()
-        } else {
-          console.error('Error JSON del servidor:', res)
-          toast(res.error || 'Error al subir archivo', 'error')
-        }
+      toast('Subiendo archivo directamente a Supabase Storage...', 'info')
+      const { client, config } = await getSupabaseStorage()
+      if (file.size > 6 * 1024 * 1024) {
+        await uploadPdfResumable(file, upload.data.bucket, upload.data.path, upload.data.token, config)
       } else {
-        const rawText = await response.text()
-        console.error(`Error no-JSON del servidor (Status ${response.status}):`, rawText)
-        toast(`Error del servidor (${response.status}). Revisa la consola (F12).`, 'error')
+        const { error } = await client.storage
+          .from(upload.data.bucket)
+          .uploadToSignedUrl(upload.data.path, upload.data.token, file, {
+            contentType: 'application/pdf',
+          })
+        if (error) throw new Error(`Supabase Storage: ${error.message}`)
       }
+
+      await api('POST', `/digitalizacion/upload/${encodeURIComponent(expedienteId)}`, {
+        path: upload.data.path,
+        checksumSha256,
+      })
+
+      toast('Archivo subido correctamente', 'success')
+      if (callback) callback()
     } catch (err) {
-      console.error('Error de red/fetch crítico:', err)
-      toast('Error de conexión al subir archivo', 'error')
+      console.error('Error al subir el PDF:', err)
+      toast(err?.message || 'Error al subir el archivo PDF', 'error')
     }
   }
 
@@ -950,9 +1023,10 @@ function panelCargaSerie(node, titulo) {
     <div class="pdf-management-section" style="width: 100%; margin-bottom: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <h4 style="font-size: 14px; color: var(--blue);">${escapeHtml(titulo)}</h4>
-        <button class="btn btn-purple btn-sm" onclick="handleFileUpload('${node.code}', () => loadDigitalizaciones('${node.code}', '${containerId}'))">
-          + Subir PDF
-        </button>
+        ${currentPermisos.subirArchivos ? `
+          <button class="btn btn-purple btn-sm" onclick="handleFileUpload('${node.code}', () => loadDigitalizaciones('${node.code}', '${containerId}'))">
+            + Subir PDF
+          </button>` : ''}
       </div>
       <div id="${containerId}"></div>
     </div>`

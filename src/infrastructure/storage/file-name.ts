@@ -10,3 +10,8 @@ export function sanitizeStorageFileName(fileName: string): string {
 
   return extension ? `${safeName}.${extension}` : safeName
 }
+
+export function deriveFileName(urlArchivo: string): string {
+  const last = urlArchivo.split('/').pop() || urlArchivo
+  return last.replace(/^\d{13}-[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}-/i, '').replace(/^\d{13}-/, '')
+}

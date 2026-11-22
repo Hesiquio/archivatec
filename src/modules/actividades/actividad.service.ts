@@ -2,7 +2,7 @@ import { db } from '../../infrastructure/database/client'
 import { digitalizaciones, expedientes, usuarios } from '../../infrastructure/database/schema'
 import { eq, and, ilike, sql, desc } from 'drizzle-orm'
 import type { ActividadQueryDTO } from './actividad.schema'
-import { deriveFileName } from '../../infrastructure/storage/supabase-storage'
+import { deriveFileName } from '../../infrastructure/storage/file-name'
 
 interface ScopeDivision {
   division: string

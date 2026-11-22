@@ -3,7 +3,7 @@ import { digitalizaciones, expedientes, cajas, ubicaciones } from '../../infrast
 import { eq, and, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { DigitalizacionDTO, ActualizarEstadoDTO, DigitalizacionQueryDTO } from './digitalizacion.schema'
-import { deriveFileName } from '../../infrastructure/storage/supabase-storage'
+import { deriveFileName } from '../../infrastructure/storage/file-name'
 import { obtenerCarreraDocenciaPorCodigo } from '../series-documentales/series-documental.catalog'
 
 export class DigitalizacionService {

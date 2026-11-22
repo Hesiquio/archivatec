@@ -5,35 +5,38 @@ function getSupabaseClient() {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
     throw new Error('SUPABASE_URL y SUPABASE_SERVICE_KEY son requeridas para subir archivos. Verifica las variables de entorno en Vercel.')
   }
-  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY)
-}
-
-// Deriva un nombre de archivo "limpio" para mostrar en la UI a partir de la
-// URL pública de un archivo en Storage. Quita el prefijo `${Date.now()}-`
-// (13 dígitos) que digitalizacion.routes.ts antepone al subir para evitar
-// colisiones de nombre en el bucket.
-export function deriveFileName(urlArchivo: string): string {
-  const last = urlArchivo.split('/').pop() || urlArchivo
-  return last.replace(/^\d{13}-/, '')
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+  })
 }
 
 export const storageService = {
-  async uploadFile(bucket: string, path: string, file: ArrayBuffer, contentType: string) {
+  async createSignedUploadUrl(bucket: string, path: string) {
     const supabase = getSupabaseClient()
-
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(path, file, {
-        contentType,
-        upsert: true
-      })
+      .createSignedUploadUrl(path, { upsert: true })
 
     if (error) throw error
+    return data.token
+  },
 
-    const { data: { publicUrl } } = supabase.storage
+  async fileExists(bucket: string, path: string) {
+    const supabase = getSupabaseClient()
+    const separator = path.lastIndexOf('/')
+    const folder = separator === -1 ? '' : path.slice(0, separator)
+    const fileName = path.slice(separator + 1)
+    const { data, error } = await supabase.storage
       .from(bucket)
-      .getPublicUrl(path)
+      .list(folder, { search: fileName, limit: 100 })
 
+    if (error) throw error
+    return data.some((file) => file.name === fileName)
+  },
+
+  getPublicUrl(bucket: string, path: string) {
+    const supabase = getSupabaseClient()
+    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
     return publicUrl
   },
 

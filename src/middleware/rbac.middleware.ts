@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
+import type { Permisos } from '../modules/auth/auth.service'
 
 export type Role = 'ADMIN' | 'ARCHIVISTA' | 'CONSULTA' | 'DIGITALIZADOR'
 
@@ -42,3 +43,16 @@ export const requireRole = (...roles: Role[]) =>
  * Requiere que el usuario sea exactamente ADMIN
  */
 export const adminOnly = requireRole('ADMIN')
+
+export const requirePermission = (permission: keyof Permisos) =>
+  createMiddleware(async (c, next) => {
+    const user = c.get('user')
+
+    if (!user || (user.rol !== 'ADMIN' && !user.permisos?.[permission])) {
+      throw new HTTPException(403, {
+        message: `No tienes permiso para ${permission === 'subirArchivos' ? 'subir archivos' : 'realizar esta acción'}`,
+      })
+    }
+
+    await next()
+  })
