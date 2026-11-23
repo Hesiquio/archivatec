@@ -1034,6 +1034,7 @@ function renderFolderChildren(container, node) {
 }
 
 function renderMetadatosArchivo(node) {
+  if (navState.subdir !== 'Subdirección de Extensión y Vinculación') return ''
   const metadata = node.archivalMetadata
   if (!metadata) return ''
   const formatoAnios = value => `${value} ${value === 1 ? 'año' : 'años'}`
@@ -1091,6 +1092,7 @@ function openFolder(code, name, hasChildren) {
   } else {
     const parent = navState.path[navState.path.length - 1]
     node = hijosVisiblesEnNavegacion(parent).find(n => n.code === code)
+      || obtenerHijosNodo(parent).find(n => n.code === code)
   }
 
   if (!node) return
