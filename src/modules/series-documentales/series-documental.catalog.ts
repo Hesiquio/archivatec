@@ -21,7 +21,10 @@ const SERIES_POR_SUBDIRECCION: Record<string, readonly string[]> = {
   'Subdirección de Academia': ['3S'],
   'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C'],
   'Subdirección de Administración': ['1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C'],
-  'Subdirección de Planeación y Vinculación': ['1S', '2S', '5S'],
+  'Subdirección de Planeación y Vinculación': [
+    '1S.01', '1S.02', '1S.03', '1S.04', '1S.05', '1S.06',
+    '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
+  ],
   'Subdirección de Planeación y Vinculación / Desarrollo': ['1S', '2S', '5S'],
   'Subdirección de Planeación y Desarrollo': ['1S', '2S', '5S'],
   'Subdirección de Planeación': ['1S', '2S', '5S'],
@@ -91,6 +94,8 @@ export function categoriaDePrefijo(prefijo: string): 'sustantivas' | 'comunes' |
 
 export function esPrefijoCatalogado(prefijo: string): boolean {
   return SUBDIRECCIONES_SERIES.some((subdireccion) =>
-    SERIES_POR_SUBDIRECCION[subdireccion].includes(prefijo),
+    SERIES_POR_SUBDIRECCION[subdireccion].some((codigo) =>
+      codigo === prefijo || obtenerPrefijoRaiz(codigo) === prefijo,
+    ),
   )
 }

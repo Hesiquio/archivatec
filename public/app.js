@@ -239,24 +239,34 @@ function coincideConPrefijosDeCatalogo(codigo, prefixes) {
   )
 }
 
+function nombreNodoVisible(node, subdireccion = navState.subdir) {
+  return NOMBRES_POR_SUBDIRECCION[subdireccion]?.[node.code] || node.name
+}
+
 function raicesPermitidasParaSubdireccion(subdireccion, categoria) {
   const roots = categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
-  if (subdireccion !== 'Subdirección de Extensión y Vinculación') return roots
+  if (!SUBDIRECCIONES_CON_CATALOGO_ACOTADO.has(subdireccion)) return roots
   const prefixes = prefijosPermitidosParaSubdireccion(subdireccion)
   return roots.filter(node => coincideConPrefijosDeCatalogo(node.code, prefixes))
 }
 
 function hijosVisiblesEnNavegacion(node) {
   const children = obtenerHijosNodo(node)
-  if (navState.subdir !== 'Subdirección de Extensión y Vinculación') return children
+  if (!SUBDIRECCIONES_CON_CATALOGO_ACOTADO.has(navState.subdir)) return children
   const prefixes = prefijosPermitidosParaSubdireccion(navState.subdir)
   return children.filter(child => coincideConPrefijosDeCatalogo(child.code, prefixes))
 }
 
 function subdireccionParaCodigo(codigo) {
-  return SUBDIRECCIONES.find(subdireccion => prefijosPermitidosParaSubdireccion(subdireccion).some(prefix =>
-    codigo === prefix || codigo.startsWith(`${prefix}.`)
-  )) || SUBDIRECCIONES[0]
+  return SUBDIRECCIONES.flatMap(subdireccion =>
+    prefijosPermitidosParaSubdireccion(subdireccion)
+      .filter(prefix =>
+        codigo === prefix
+        || codigo.startsWith(`${prefix}.`)
+        || prefix.startsWith(`${codigo}.`)
+      )
+      .map(prefix => ({ subdireccion, prefix })),
+  ).sort((a, b) => b.prefix.length - a.prefix.length)[0]?.subdireccion || SUBDIRECCIONES[0]
 }
 
 function mergeSerieEnArbol(serie) {
@@ -363,7 +373,7 @@ function irACarpetaRegistros(categoria, ruta) {
 
   navState = {
     year: YEARS[YEARS.length - 1],
-    subdir: subdireccionParaCodigo(ruta[0]?.code || ''),
+    subdir: subdireccionParaCodigo(ruta[ruta.length - 1]?.code || ruta[0]?.code || ''),
     category: categoria,
     path: ruta,
   }
@@ -799,7 +809,7 @@ function renderBreadcrumb() {
   // Nodos de path
   navState.path.forEach((node, idx) => {
     const captured = idx
-    crumbs.push({ label: `${node.code} ${escapeHtml(node.name)}`, onclick: () => {
+    crumbs.push({ label: `${node.code} ${escapeHtml(nombreNodoVisible(node))}`, onclick: () => {
       navState.path = navState.path.slice(0, captured + 1)
       renderView()
     }})
@@ -996,7 +1006,7 @@ function renderFolderChildren(container, node) {
 
     container.innerHTML = `
       <div class="section-header">
-        <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
+        <h3 class="section-title">${node.code} ${escapeHtml(nombreNodoVisible(node))}</h3>
       </div>
       <div class="terminal-folder">
         <div class="terminal-folder-icon">📄</div>
@@ -1004,9 +1014,8 @@ function renderFolderChildren(container, node) {
         <p class="terminal-folder-sub">Aquí se almacenan los documentos de esta serie documental.</p>
         <div class="terminal-folder-meta">
           <span class="terminal-chip">📂 Serie: <strong>${node.code}</strong></span>
-          <span class="terminal-chip">🗂 ${escapeHtml(node.name)}</span>
+          <span class="terminal-chip">🗂 ${escapeHtml(nombreNodoVisible(node))}</span>
         </div>
-        ${renderMetadatosArchivo(node)}
         
         ${panelCargaSerie(node, 'Documentos Digitalizados')}
       </div>`
@@ -1020,9 +1029,8 @@ function renderFolderChildren(container, node) {
     || (node.code === '3S.14' ? 'Información general de gestión del curso' : null)
   container.innerHTML = `
     <div class="section-header">
-      <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
+      <h3 class="section-title">${node.code} ${escapeHtml(nombreNodoVisible(node))}</h3>
     </div>
-    ${renderMetadatosArchivo(node)}
     ${directUploadTitle ? panelCargaSerie(node, directUploadTitle) : ''}
     <div class="folder-list">
       ${children.map(child => folderItemHTML(child)).join('')}
@@ -1031,24 +1039,6 @@ function renderFolderChildren(container, node) {
     const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
     setTimeout(() => loadDigitalizaciones(node.code, containerId), 100)
   }
-}
-
-function renderMetadatosArchivo(node) {
-  if (navState.subdir !== 'Subdirección de Extensión y Vinculación') return ''
-  const metadata = node.archivalMetadata
-  if (!metadata) return ''
-  const formatoAnios = value => `${value} ${value === 1 ? 'año' : 'años'}`
-  const plazos = metadata.plazosVisibles.map(({ anios, archivo }) =>
-    `${archivo ? `Archivo de ${archivo}: ` : ''}${formatoAnios(anios)}`,
-  ).join(' · ')
-
-  return `
-    <dl class="archival-metadata" aria-label="Datos de conservación documental">
-      <div class="archival-metadata-item">
-        <dt>Plazos visibles</dt>
-        <dd>${escapeHtml(plazos)}</dd>
-      </div>
-    </dl>`
 }
 
 function panelCargaSerie(node, titulo) {
@@ -1071,12 +1061,13 @@ function folderItemHTML(node) {
   const hasChildren = hijosVisiblesEnNavegacion(node).length > 0
   const icon = hasChildren ? '📁' : '📄'
   const arrow = hasChildren ? '<span class="folder-arrow">›</span>' : ''
+  const name = nombreNodoVisible(node)
   return `
     <button class="folder-row${hasChildren ? ' has-children' : ''}"
-            onclick="openFolder('${node.code.replace(/'/g, "\\'")}', '${node.name.replace(/'/g, "\\'")}', ${hasChildren})">
+            onclick="openFolder('${node.code.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}', ${hasChildren})">
       <span class="folder-row-icon">${icon}</span>
       <span class="folder-row-code">${node.code}</span>
-      <span class="folder-row-name">${escapeHtml(node.name)}</span>
+      <span class="folder-row-name">${escapeHtml(name)}</span>
       ${arrow}
     </button>`
 }
