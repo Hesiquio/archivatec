@@ -893,7 +893,6 @@ function renderSubdirecciones(container) {
         <button class="folder-card" onclick="selectSubdir('${s.replace(/'/g, "\\'")}')">
           <span class="folder-icon">${icons[i]}</span>
           <span class="folder-name">${s}</span>
-          ${FONDOS_POR_SUBDIRECCION[s] ? `<span class="folder-badge">Fondo ${escapeHtml(FONDOS_POR_SUBDIRECCION[s].clave)} · ${escapeHtml(FONDOS_POR_SUBDIRECCION[s].nombre)}</span>` : ''}
         </button>
       `).join('')}
     </div>`
