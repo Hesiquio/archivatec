@@ -19,6 +19,7 @@ const SERIES_POR_SUBDIRECCION = {
 }
 
 const SUBDIRECCIONES_CON_CATALOGO_ACOTADO = new Set([
+  'Subdirección de Servicios Administrativos',
   'Subdirección de Extensión y Vinculación',
   'Subdirección de Planeación y Vinculación',
 ])

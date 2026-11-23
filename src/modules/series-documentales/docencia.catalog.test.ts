@@ -4,13 +4,14 @@ import { runInNewContext } from 'node:vm'
 
 const catalogSource = readFileSync(new URL('../../../public/catalog.js', import.meta.url), 'utf8')
 const catalogContext = runInNewContext(
-  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
+  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO: Array.from(SUBDIRECCIONES_CON_CATALOGO_ACOTADO), FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
 )
-const { FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
+const { FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO, FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
   JSON.parse(JSON.stringify(catalogContext)) as {
   FUNCIONES_SUSTANTIVAS: CatalogNode[]
   FUNCIONES_COMUNES: CatalogNode[]
   SERIES_POR_SUBDIRECCION: Record<string, string[]>
+  SUBDIRECCIONES_CON_CATALOGO_ACOTADO: string[]
   FONDOS_POR_SUBDIRECCION: Record<string, { clave: string; nombre: string }>
   NOMBRES_POR_SUBDIRECCION: Record<string, Record<string, string>>
   CARRERAS_DOCENCIA: string[]
@@ -73,6 +74,7 @@ test('keeps Planeación-specific names scoped without renaming shared catalog no
 })
 
 test('keeps Servicios Administrativos catalog labels scoped and Capacitación subseries exact', () => {
+  expect(SUBDIRECCIONES_CON_CATALOGO_ACOTADO).toContain('Subdirección de Servicios Administrativos')
   expect(NOMBRES_POR_SUBDIRECCION['Subdirección de Servicios Administrativos']).toEqual({
     '2C.03.01': 'administrativo',
     '2C.03.02': 'docente',

@@ -920,11 +920,13 @@ function renderCategories(container) {
       <p class="section-sub">Selecciona el tipo de funciones</p>
     </div>
     <div class="folder-grid cat-grid">
-      <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
-        <span class="folder-icon">📁</span>
-        <span class="folder-name">FUNCIONES SUSTANTIVAS</span>
-        <span class="folder-badge">${sustantivas.length} secciones</span>
-      </button>
+      ${navState.subdir === 'Subdirección de Servicios Administrativos' ? '' : `
+        <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
+          <span class="folder-icon">📁</span>
+          <span class="folder-name">FUNCIONES SUSTANTIVAS</span>
+          <span class="folder-badge">${sustantivas.length} secciones</span>
+        </button>
+      `}
       <button class="folder-card cat-comun" onclick="selectCategory('comunes')">
         <span class="folder-icon">📂</span>
         <span class="folder-name">FUNCIONES COMUNES</span>
