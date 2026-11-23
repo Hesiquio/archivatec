@@ -40,7 +40,7 @@ test('preserves both function catalogs and all configured subdirections', () => 
   ])
   expect(SERIES_POR_SUBDIRECCION).toEqual({
     'Subdirección Académica': ['3S'],
-    'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C'],
+    'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '10C'],
     'Subdirección de Planeación y Vinculación': [
       '1S.01', '1S.02', '1S.03', '1S.04', '1S.05', '1S.06',
       '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
@@ -92,7 +92,9 @@ test('keeps Servicios Administrativos catalog labels scoped and Capacitación su
     ['2C.05.01', 'Administrativo'],
     ['2C.05.02', 'Docente'],
   ])
-  expect(SERIES_POR_SUBDIRECCION['Subdirección de Servicios Administrativos']).toContain('2C')
+  expect(SERIES_POR_SUBDIRECCION['Subdirección de Servicios Administrativos']).toEqual([
+    '1C', '2C', '3C', '4C', '10C',
+  ])
   expect(SERIES_POR_SUBDIRECCION['Subdirección de Planeación y Vinculación']).not.toContain('2C')
   expect(SERIES_POR_SUBDIRECCION['Subdirección de Extensión y Vinculación']).not.toContain('2C')
 })

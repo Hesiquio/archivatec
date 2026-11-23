@@ -1625,7 +1625,7 @@ document.getElementById('btn-config-series').onclick = async () => {
       </section>
 
       <section class="series-form-section">
-        <h4 class="series-form-section-title">Asignación y vigencia</h4>
+        <h4 class="series-form-section-title">Asignación</h4>
         <div class="series-form-grid">
           <div class="field-group series-form-grid-full">
             <label for="m-serie-encargado">Encargado de la subdivisión</label>
