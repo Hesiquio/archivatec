@@ -254,7 +254,14 @@ function hijosVisiblesEnNavegacion(node) {
   const children = obtenerHijosNodo(node)
   if (!SUBDIRECCIONES_CON_CATALOGO_ACOTADO.has(navState.subdir)) return children
   const prefixes = prefijosPermitidosParaSubdireccion(navState.subdir)
-  return children.filter(child => coincideConPrefijosDeCatalogo(child.code, prefixes))
+  const visibleChildren = children.filter(child => coincideConPrefijosDeCatalogo(child.code, prefixes))
+  if (
+    navState.subdir === 'Subdirección Académica de Investigación e Innovación'
+    && SERIES_DOCENCIA_CON_CARRERAS.has(node.code)
+  ) {
+    return visibleChildren.filter(child => node.code === '3S.14' && child.code === '3S.14.01')
+  }
+  return visibleChildren
 }
 
 function subdireccionParaCodigo(codigo) {
@@ -882,7 +889,7 @@ function selectYear(year) {
 
 // ── Nivel 2: Subdirecciones ───────────────────────────────────
 function renderSubdirecciones(container) {
-  const icons = ['📚', '📋', '🏛️', '🌐']
+  const icons = ['📚', '📋', '🏛️', '🌐', '🔬']
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">Año: ${navState.year}</h3>
@@ -999,7 +1006,10 @@ async function loadDigitalizaciones(expedienteId, containerId) {
 // ── Renderiza hijos de un nodo ────────────────────────────────
 function renderFolderChildren(container, node) {
   let children = hijosVisiblesEnNavegacion(node)
-  if (children.length === 0) children = subseriesDocencia(node.code)
+  if (
+    children.length === 0
+    && navState.subdir !== 'Subdirección Académica de Investigación e Innovación'
+  ) children = subseriesDocencia(node.code)
   if (children.length === 0) {
     // Usamos el código de la serie como ID de expediente para la demo/prototipo
     const expedienteId = node.code 
@@ -1026,8 +1036,9 @@ function renderFolderChildren(container, node) {
     return
   }
 
-  const directUploadTitle = node.directUploadTitle
-    || (node.code === '3S.14' ? 'Información general de gestión del curso' : null)
+  const directUploadTitle = navState.subdir === 'Subdirección Académica de Investigación e Innovación'
+    ? null
+    : node.directUploadTitle || (node.code === '3S.14' ? 'Información general de gestión del curso' : null)
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">${node.code} ${escapeHtml(nombreNodoVisible(node))}</h3>

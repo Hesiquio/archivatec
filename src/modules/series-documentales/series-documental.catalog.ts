@@ -7,6 +7,7 @@ export const SUBDIRECCIONES_SERIES = [
 
 export const SUBDIRECCIONES_SERIES_ALIAS = [
   'Subdirección de Investigación e Innovación',
+  'Subdirección Académica de Investigación e Innovación',
   'Subdirección de Academia',
   'Subdirección de Administración',
   'Subdirección de Planeación y Vinculación / Desarrollo',
@@ -18,6 +19,7 @@ export const SUBDIRECCIONES_SERIES_ALIAS = [
 const SERIES_POR_SUBDIRECCION: Record<string, readonly string[]> = {
   'Subdirección Académica': ['3S'],
   'Subdirección de Investigación e Innovación': ['3S'],
+  'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
   'Subdirección de Academia': ['3S'],
   'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '10C'],
   'Subdirección de Administración': ['1C', '2C', '3C', '4C', '10C'],

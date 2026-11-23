@@ -11,6 +11,8 @@ import {
 
 test('maps each subdirection to only its authorized catalog roots', () => {
   expect(getPrefijosPermitidos('Subdirección Académica')).toEqual(['3S'])
+  expect(getPrefijosPermitidos('Subdirección Académica de Investigación e Innovación')).toEqual(['3S', '10C'])
+  expect(getPrefijosPermitidos('Subdirección de Investigación e Innovación')).toEqual(['3S'])
   expect(getPrefijosPermitidos('Subdirección de Servicios Administrativos')).toEqual([
     '1C', '2C', '3C', '4C', '10C',
   ])

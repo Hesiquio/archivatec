@@ -6,6 +6,7 @@ const SUBDIRECCIONES = [
   'Subdirección de Servicios Administrativos',
   'Subdirección de Planeación y Vinculación',
   'Subdirección de Extensión y Vinculación',
+  'Subdirección Académica de Investigación e Innovación',
 ]
 
 const SERIES_POR_SUBDIRECCION = {
@@ -16,15 +17,20 @@ const SERIES_POR_SUBDIRECCION = {
     '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
   ],
   'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
+  'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
 }
 
 const SUBDIRECCIONES_CON_CATALOGO_ACOTADO = new Set([
   'Subdirección de Servicios Administrativos',
   'Subdirección de Extensión y Vinculación',
   'Subdirección de Planeación y Vinculación',
+  'Subdirección Académica de Investigación e Innovación',
 ])
 
 const NOMBRES_POR_SUBDIRECCION = {
+  'Subdirección Académica de Investigación e Innovación': {
+    '3S.14.01': 'Proyectos individuales',
+  },
   'Subdirección de Servicios Administrativos': {
     '2C.03.01': 'administrativo',
     '2C.03.02': 'docente',

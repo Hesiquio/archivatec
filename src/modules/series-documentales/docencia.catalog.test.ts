@@ -4,10 +4,11 @@ import { runInNewContext } from 'node:vm'
 
 const catalogSource = readFileSync(new URL('../../../public/catalog.js', import.meta.url), 'utf8')
 const catalogContext = runInNewContext(
-  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO: Array.from(SUBDIRECCIONES_CON_CATALOGO_ACOTADO), FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
+  `${catalogSource}\n;({ SUBDIRECCIONES, FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO: Array.from(SUBDIRECCIONES_CON_CATALOGO_ACOTADO), FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
 )
-const { FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO, FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
+const { SUBDIRECCIONES, FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO, FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
   JSON.parse(JSON.stringify(catalogContext)) as {
+  SUBDIRECCIONES: string[]
   FUNCIONES_SUSTANTIVAS: CatalogNode[]
   FUNCIONES_COMUNES: CatalogNode[]
   SERIES_POR_SUBDIRECCION: Record<string, string[]>
@@ -46,12 +47,23 @@ test('preserves both function catalogs and all configured subdirections', () => 
       '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
     ],
     'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
+    'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
   })
 
   expect(FONDOS_POR_SUBDIRECCION['Subdirección de Extensión y Vinculación']).toEqual({
     clave: '2808',
     nombre: 'Instituto Tecnológico Superior de Escárcega',
   })
+})
+
+test('keeps Investigación e Innovación scoped to its exact catalog', () => {
+  const saii = 'Subdirección Académica de Investigación e Innovación'
+  expect(SUBDIRECCIONES).toContain(saii)
+  expect(SUBDIRECCIONES_CON_CATALOGO_ACOTADO).toContain(saii)
+  expect(NOMBRES_POR_SUBDIRECCION[saii]).toEqual({
+    '3S.14.01': 'Proyectos individuales',
+  })
+  expect(SERIES_POR_SUBDIRECCION[saii]).toEqual(['3S', '10C'])
 })
 
 test('keeps Planeación-specific names scoped without renaming shared catalog nodes', () => {
