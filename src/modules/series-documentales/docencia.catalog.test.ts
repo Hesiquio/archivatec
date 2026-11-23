@@ -24,12 +24,7 @@ type CatalogNode = {
   year?: number
   children?: CatalogNode[]
   archivalMetadata?: {
-    valorDocumental: string
-    archivoTramiteAnios: number
-    archivoConcentracionAnios: number
-    clasificacionInformacion: string
-    destinoFinal: string
-    areaResponsable: string
+    plazosVisibles: Array<{ anios: number; archivo?: string }>
   }
 }
 
@@ -175,7 +170,7 @@ test('preserves all series and subseries in substantive and common function cata
   expect(getCodes(c10?.children)).toEqual(['10C.01'])
 })
 
-test('preserves retention metadata for Extension and Vinculation series and terminal folders', () => {
+test('preserves only the visible retention terms for Extension and Vinculation folders', () => {
   const findNode = (code: string, nodes = [...FUNCIONES_SUSTANTIVAS, ...FUNCIONES_COMUNES]): CatalogNode | undefined => {
     for (const node of nodes) {
       if (node.code === code) return node
@@ -184,57 +179,41 @@ test('preserves retention metadata for Extension and Vinculation series and term
     }
     return undefined
   }
-  const expected = (
-    valorDocumental: string,
-    archivoTramiteAnios: number,
-    archivoConcentracionAnios: number,
-    destinoFinal: string,
-    areaResponsable: string,
-  ) => ({
-    valorDocumental,
-    archivoTramiteAnios,
-    archivoConcentracionAnios,
-    clasificacionInformacion: 'Pública',
-    destinoFinal,
-    areaResponsable,
+  const plazo = (anios: number, archivo?: string) => ({
+    anios,
+    ...(archivo ? { archivo } : {}),
   })
-
-  const cultura = expected(
-    'Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte',
-  )
+  const cultura = {
+    plazosVisibles: [plazo(4, 'trámite'), plazo(5, 'concentración')],
+  }
   expect(findNode('1S.07')?.archivalMetadata).toEqual(cultura)
   for (let index = 1; index <= 12; index += 1) {
     expect(findNode(`1S.07.${String(index).padStart(2, '0')}`)?.archivalMetadata).toEqual(cultura)
   }
 
-  const visitas = expected('Administrativo', 1, 4, 'Baja', 'Departamento de Desarrollo Emprendedor')
-  const convenios = expected(
-    'Administrativo, Legal', 5, 2, 'Histórico', 'Departamento de Vinculación e Intercambio Académico',
-  )
-  const servicioSocial = expected('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social')
-  const emprendimiento = expected(
-    'Administrativo, Legal', 1, 5, 'Muestreo', 'Departamento de Desarrollo Emprendedor',
-  )
-  const egresados = expected(
-    'Administrativo', 6, 5, 'Histórico', 'Departamento de Vinculación e Intercambio Académico',
-  )
+  const visitas = { plazosVisibles: [plazo(1)] }
+  const convenios = { plazosVisibles: [plazo(5)] }
+  const servicioSocial = { plazosVisibles: [plazo(3)] }
   expect(findNode('4S.01')?.archivalMetadata).toEqual(visitas)
   expect(findNode('4S.02')?.archivalMetadata).toEqual(convenios)
   expect(findNode('4S.03')?.archivalMetadata).toEqual(servicioSocial)
   for (let index = 1; index <= 12; index += 1) {
     expect(findNode(`4S.03.${String(index).padStart(2, '0')}`)?.archivalMetadata).toEqual(servicioSocial)
   }
-  expect(findNode('4S.04')?.archivalMetadata).toEqual(emprendimiento)
-  expect(findNode('4S.05')?.archivalMetadata).toEqual(egresados)
-
-  expect(findNode('5C.01')?.archivalMetadata).toEqual(
-    expected('Administrativo', 1, 2, 'Baja', 'Departamento de Difusión'),
-  )
-  expect(findNode('10C.01.01')?.archivalMetadata).toEqual(expected(
-    'Administrativo', 1, 5, 'Histórico', 'Todos los departamentos que generen oficios Internos',
-  ))
-  expect(findNode('10C.01.02')?.archivalMetadata).toEqual(expected(
-    'Administrativo', 1, 5, 'Histórico', 'Todos los departamentos que generen oficios Externos',
-  ))
+  expect(findNode('4S.04')?.archivalMetadata).toEqual({
+    plazosVisibles: [plazo(1), plazo(5)],
+  })
+  expect(findNode('4S.05')?.archivalMetadata).toEqual({
+    plazosVisibles: [plazo(6), plazo(5)],
+  })
+  expect(findNode('5C.01')?.archivalMetadata).toEqual({
+    plazosVisibles: [plazo(1), plazo(2)],
+  })
+  expect(findNode('10C.01.01')?.archivalMetadata).toEqual({
+    plazosVisibles: [plazo(1), plazo(5)],
+  })
+  expect(findNode('10C.01.02')?.archivalMetadata).toEqual({
+    plazosVisibles: [plazo(1), plazo(5)],
+  })
 })
 

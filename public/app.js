@@ -1037,23 +1037,16 @@ function renderMetadatosArchivo(node) {
   const metadata = node.archivalMetadata
   if (!metadata) return ''
   const formatoAnios = value => `${value} ${value === 1 ? 'año' : 'años'}`
-
-  const items = [
-    ['Valor documental', metadata.valorDocumental],
-    ['Archivo de trámite', formatoAnios(metadata.archivoTramiteAnios)],
-    ['Archivo de concentración', formatoAnios(metadata.archivoConcentracionAnios)],
-    ['Clasificación', metadata.clasificacionInformacion],
-    ['Destino final', metadata.destinoFinal],
-    ['Área responsable', metadata.areaResponsable],
-  ]
+  const plazos = metadata.plazosVisibles.map(({ anios, archivo }) =>
+    `${archivo ? `Archivo de ${archivo}: ` : ''}${formatoAnios(anios)}`,
+  ).join(' · ')
 
   return `
     <dl class="archival-metadata" aria-label="Datos de conservación documental">
-      ${items.map(([label, value]) => `
-        <div class="archival-metadata-item">
-          <dt>${escapeHtml(label)}</dt>
-          <dd>${escapeHtml(value)}</dd>
-        </div>`).join('')}
+      <div class="archival-metadata-item">
+        <dt>Plazos visibles</dt>
+        <dd>${escapeHtml(plazos)}</dd>
+      </div>
     </dl>`
 }
 
