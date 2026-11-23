@@ -241,23 +241,22 @@ function coincideConPrefijosDeCatalogo(codigo, prefixes) {
 
 function raicesPermitidasParaSubdireccion(subdireccion, categoria) {
   const roots = categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
+  if (subdireccion !== 'Subdirección de Extensión y Vinculación') return roots
   const prefixes = prefijosPermitidosParaSubdireccion(subdireccion)
   return roots.filter(node => coincideConPrefijosDeCatalogo(node.code, prefixes))
 }
 
 function hijosVisiblesEnNavegacion(node) {
   const children = obtenerHijosNodo(node)
-  if (!navState.subdir) return children
+  if (navState.subdir !== 'Subdirección de Extensión y Vinculación') return children
   const prefixes = prefijosPermitidosParaSubdireccion(navState.subdir)
   return children.filter(child => coincideConPrefijosDeCatalogo(child.code, prefixes))
 }
 
 function subdireccionParaCodigo(codigo) {
-  return SUBDIRECCIONES.flatMap(subdireccion =>
-    prefijosPermitidosParaSubdireccion(subdireccion)
-      .filter(prefix => codigo === prefix || codigo.startsWith(`${prefix}.`))
-      .map(prefix => ({ subdireccion, prefix })),
-  ).sort((a, b) => b.prefix.length - a.prefix.length)[0]?.subdireccion || SUBDIRECCIONES[0]
+  return SUBDIRECCIONES.find(subdireccion => prefijosPermitidosParaSubdireccion(subdireccion).some(prefix =>
+    codigo === prefix || codigo.startsWith(`${prefix}.`)
+  )) || SUBDIRECCIONES[0]
 }
 
 function mergeSerieEnArbol(serie) {
