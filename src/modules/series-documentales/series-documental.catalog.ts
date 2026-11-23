@@ -25,8 +25,15 @@ const SERIES_POR_SUBDIRECCION: Record<string, readonly string[]> = {
   'Subdirección de Planeación y Vinculación / Desarrollo': ['1S', '2S', '5S'],
   'Subdirección de Planeación y Desarrollo': ['1S', '2S', '5S'],
   'Subdirección de Planeación': ['1S', '2S', '5S'],
-  'Subdirección de Extensión y Vinculación': ['4S'],
+  'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
   'Subdirección de Extensión': ['4S'],
+}
+
+export const FONDOS_POR_SUBDIRECCION: Readonly<Record<string, { clave: string; nombre: string }>> = {
+  'Subdirección de Extensión y Vinculación': {
+    clave: '2808',
+    nombre: 'Instituto Tecnológico Superior de Escárcega',
+  },
 }
 
 const SERIES_DOCENCIA_CON_CARRERAS = new Set([
@@ -61,10 +68,11 @@ export function obtenerPrefijoRaiz(codigo: string): string | undefined {
 }
 
 export function obtenerSubdireccionPorCodigo(codigo: string): SubdireccionSerie | undefined {
-  const prefijo = obtenerPrefijoRaiz(codigo)
-  return SUBDIRECCIONES_SERIES.find((subdireccion) =>
-    SERIES_POR_SUBDIRECCION[subdireccion].includes(prefijo || ''),
-  )
+  return SUBDIRECCIONES_SERIES
+    .flatMap((subdireccion) => SERIES_POR_SUBDIRECCION[subdireccion]
+      .filter((prefijo) => codigo === prefijo || codigo.startsWith(`${prefijo}.`))
+      .map((prefijo) => ({ subdireccion, prefijo })))
+    .sort((a, b) => b.prefijo.length - a.prefijo.length)[0]?.subdireccion
 }
 
 export function obtenerCarreraDocenciaPorCodigo(codigo: string): string | undefined {

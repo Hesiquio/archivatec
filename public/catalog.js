@@ -12,7 +12,14 @@ const SERIES_POR_SUBDIRECCION = {
   'Subdirección Académica': ['3S'],
   'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C'],
   'Subdirección de Planeación y Vinculación': ['1S', '2S', '5S'],
-  'Subdirección de Extensión y Vinculación': ['4S'],
+  'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
+}
+
+const FONDOS_POR_SUBDIRECCION = {
+  'Subdirección de Extensión y Vinculación': {
+    clave: '2808',
+    nombre: 'Instituto Tecnológico Superior de Escárcega',
+  },
 }
 
 const CARRERAS_DOCENCIA = [
@@ -33,6 +40,15 @@ const SERIES_DOCENCIA_CON_CARRERAS = new Set([
   '3S.01', '3S.02', '3S.03', '3S.04', '3S.05', '3S.06',
   '3S.07', '3S.08', '3S.09', '3S.12', '3S.14', '3S.15',
 ])
+
+const metadatosArchivo = (valorDocumental, archivoTramiteAnios, archivoConcentracionAnios, destinoFinal, areaResponsable) => ({
+  valorDocumental,
+  archivoTramiteAnios,
+  archivoConcentracionAnios,
+  clasificacionInformacion: 'Pública',
+  destinoFinal,
+  areaResponsable,
+})
 
 function subseriesCarreras(codigoSerie, primerIndice = 1) {
   return CARRERAS_DOCENCIA.map((nombre, index) => ({
@@ -72,19 +88,22 @@ const FUNCIONES_SUSTANTIVAS = [
       {
         code: '1S.07',
         name: 'Formación integral / Actividad extraescolar',
+        archivalMetadata: metadatosArchivo(
+          'Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte',
+        ),
         children: [
-          { code: '1S.07.01', name: 'Licenciatura en Administración' },
-          { code: '1S.07.02', name: 'Ingeniería en Sistemas Computacionales' },
-          { code: '1S.07.03', name: 'Ingeniería en Industrias Alimentarias' },
-          { code: '1S.07.04', name: 'Gastronomía' },
-          { code: '1S.07.05', name: 'Ingeniería en Energías Renovables' },
-          { code: '1S.07.06', name: 'Licenciatura en Turismo' },
-          { code: '1S.07.07', name: 'Eventos Culturales y Deportivos' },
-          { code: '1S.07.08', name: 'Ingeniería en Animación Digital y Efectos Visuales' },
-          { code: '1S.07.09', name: 'Contador Público' },
-          { code: '1S.07.10', name: 'Licenciatura en Administración Modalidad Mixta' },
-          { code: '1S.07.11', name: 'Ingeniería Ferroviaria' },
-          { code: '1S.07.12', name: 'Ingeniería en Inteligencia Artificial' },
+          { code: '1S.07.01', name: 'Licenciatura en Administración', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.02', name: 'Ingeniería en Sistemas Computacionales', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.03', name: 'Ingeniería en Industrias Alimentarias', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.04', name: 'Gastronomía', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.05', name: 'Ingeniería en Energías Renovables', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.06', name: 'Licenciatura en Turismo', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.07', name: 'Eventos Culturales y Deportivos', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.08', name: 'Ingeniería en Animación Digital y Efectos Visuales', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.09', name: 'Contador Público', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.10', name: 'Licenciatura en Administración Modalidad Mixta', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.11', name: 'Ingeniería Ferroviaria', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
+          { code: '1S.07.12', name: 'Ingeniería en Inteligencia Artificial', archivalMetadata: metadatosArchivo('Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte') },
         ],
       },
     ],
@@ -164,28 +183,45 @@ const FUNCIONES_SUSTANTIVAS = [
     code: '4S',
     name: 'VINCULACIÓN ACADÉMICA',
     children: [
-      { code: '4S.01', name: 'Visitas a empresas' },
-      { code: '4S.02', name: 'Convenios' },
+      {
+        code: '4S.01',
+        name: 'Visitas a empresas',
+        archivalMetadata: metadatosArchivo('Administrativo', 1, 4, 'Baja', 'Departamento de Desarrollo Emprendedor'),
+      },
+      {
+        code: '4S.02',
+        name: 'Convenios',
+        archivalMetadata: metadatosArchivo('Administrativo, Legal', 5, 2, 'Histórico', 'Departamento de Vinculación e Intercambio Académico'),
+      },
       {
         code: '4S.03',
         name: 'Servicio social',
+        archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social'),
         children: [
-          { code: '4S.03.01', name: 'Licenciatura en Administración' },
-          { code: '4S.03.02', name: 'Ingeniería en Sistemas Computacionales' },
-          { code: '4S.03.03', name: 'Ingeniería en Industrias Alimentarias' },
-          { code: '4S.03.04', name: 'Gastronomía' },
-          { code: '4S.03.05', name: 'Ingeniería en Energías Renovables' },
-          { code: '4S.03.06', name: 'Licenciatura en Turismo' },
-          { code: '4S.03.07', name: 'Ingeniería en Animación Digital y Efectos Visuales' },
-          { code: '4S.03.08', name: 'Contador Público' },
-          { code: '4S.03.09', name: 'Licenciatura en Administración (Modalidad Mixta)' },
-          { code: '4S.03.10', name: 'Ingeniería Ferroviaria' },
-          { code: '4S.03.11', name: 'Ingeniería en Inteligencia Artificial' },
-          { code: '4S.03.12', name: 'Ingeniería en Sistemas Computacionales no Escolarizada' },
+          { code: '4S.03.01', name: 'Licenciatura en Administración', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.02', name: 'Ingeniería en Sistemas Computacionales', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.03', name: 'Ingeniería en Industrias Alimentarias', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.04', name: 'Gastronomía', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.05', name: 'Ingeniería en Energías Renovables', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.06', name: 'Licenciatura en Turismo', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.07', name: 'Ingeniería en Animación Digital y Efectos Visuales', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.08', name: 'Contador Público', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.09', name: 'Licenciatura en Administración (Modalidad Mixta)', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.10', name: 'Ingeniería Ferroviaria', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.11', name: 'Ingeniería en Inteligencia Artificial', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
+          { code: '4S.03.12', name: 'Ingeniería en Sistemas Computacionales no Escolarizada', archivalMetadata: metadatosArchivo('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social') },
         ],
       },
-      { code: '4S.04', name: 'Emprendimiento' },
-      { code: '4S.05', name: 'Vinculación egresado/sector' },
+      {
+        code: '4S.04',
+        name: 'Emprendimiento',
+        archivalMetadata: metadatosArchivo('Administrativo, Legal', 1, 5, 'Muestreo', 'Departamento de Desarrollo Emprendedor'),
+      },
+      {
+        code: '4S.05',
+        name: 'Vinculación egresado/sector',
+        archivalMetadata: metadatosArchivo('Administrativo', 6, 5, 'Histórico', 'Departamento de Vinculación e Intercambio Académico'),
+      },
     ],
   },
   {
@@ -257,7 +293,11 @@ const FUNCIONES_COMUNES = [
     code: '5C',
     name: 'DIFUSIÓN',
     children: [
-      { code: '5C.01', name: 'Difusión institucional' },
+      {
+        code: '5C.01',
+        name: 'Difusión institucional',
+        archivalMetadata: metadatosArchivo('Administrativo', 1, 2, 'Baja', 'Departamento de Difusión'),
+      },
     ],
   },
   {
@@ -320,8 +360,16 @@ const FUNCIONES_COMUNES = [
         code: '10C.01',
         name: 'Vinculación',
         children: [
-          { code: '10C.01.01', name: 'Interna' },
-          { code: '10C.01.02', name: 'Externa' },
+          {
+            code: '10C.01.01',
+            name: 'Interna',
+            archivalMetadata: metadatosArchivo('Administrativo', 1, 5, 'Histórico', 'Todos los departamentos que generen oficios Internos'),
+          },
+          {
+            code: '10C.01.02',
+            name: 'Externa',
+            archivalMetadata: metadatosArchivo('Administrativo', 1, 5, 'Histórico', 'Todos los departamentos que generen oficios Externos'),
+          },
         ],
       },
     ],

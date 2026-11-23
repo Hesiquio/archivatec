@@ -231,19 +231,33 @@ function prefijosPermitidosParaSubdireccion(subdireccion) {
   return SERIES_POR_SUBDIRECCION[subdireccion] || []
 }
 
-function perteneceALaSubdireccion(codigo, subdireccion) {
-  return prefijosPermitidosParaSubdireccion(subdireccion).some(prefix =>
-    codigo === prefix || codigo.startsWith(`${prefix}.`)
+function coincideConPrefijosDeCatalogo(codigo, prefixes) {
+  return prefixes.some(prefix =>
+    codigo === prefix
+    || codigo.startsWith(`${prefix}.`)
+    || prefix.startsWith(`${codigo}.`)
   )
 }
 
 function raicesPermitidasParaSubdireccion(subdireccion, categoria) {
-  return categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
+  const roots = categoria === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
+  const prefixes = prefijosPermitidosParaSubdireccion(subdireccion)
+  return roots.filter(node => coincideConPrefijosDeCatalogo(node.code, prefixes))
+}
+
+function hijosVisiblesEnNavegacion(node) {
+  const children = obtenerHijosNodo(node)
+  if (!navState.subdir) return children
+  const prefixes = prefijosPermitidosParaSubdireccion(navState.subdir)
+  return children.filter(child => coincideConPrefijosDeCatalogo(child.code, prefixes))
 }
 
 function subdireccionParaCodigo(codigo) {
-  return SUBDIRECCIONES.find(subdireccion => perteneceALaSubdireccion(codigo, subdireccion))
-    || SUBDIRECCIONES[0]
+  return SUBDIRECCIONES.flatMap(subdireccion =>
+    prefijosPermitidosParaSubdireccion(subdireccion)
+      .filter(prefix => codigo === prefix || codigo.startsWith(`${prefix}.`))
+      .map(prefix => ({ subdireccion, prefix })),
+  ).sort((a, b) => b.prefix.length - a.prefix.length)[0]?.subdireccion || SUBDIRECCIONES[0]
 }
 
 function mergeSerieEnArbol(serie) {
@@ -870,6 +884,7 @@ function renderSubdirecciones(container) {
         <button class="folder-card" onclick="selectSubdir('${s.replace(/'/g, "\\'")}')">
           <span class="folder-icon">${icons[i]}</span>
           <span class="folder-name">${s}</span>
+          ${FONDOS_POR_SUBDIRECCION[s] ? `<span class="folder-badge">Fondo ${escapeHtml(FONDOS_POR_SUBDIRECCION[s].clave)} · ${escapeHtml(FONDOS_POR_SUBDIRECCION[s].nombre)}</span>` : ''}
         </button>
       `).join('')}
     </div>`
@@ -889,6 +904,8 @@ async function selectSubdir(subdir) {
 
 // ── Nivel 3: Categorías (Sustantivas / Comunes) ───────────────
 function renderCategories(container) {
+  const sustantivas = raicesPermitidasParaSubdireccion(navState.subdir, 'sustantivas')
+  const comunes = raicesPermitidasParaSubdireccion(navState.subdir, 'comunes')
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">${navState.subdir}</h3>
@@ -898,12 +915,12 @@ function renderCategories(container) {
       <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
         <span class="folder-icon">📁</span>
         <span class="folder-name">FUNCIONES SUSTANTIVAS</span>
-        <span class="folder-badge">${FUNCIONES_SUSTANTIVAS.length} secciones</span>
+        <span class="folder-badge">${sustantivas.length} secciones</span>
       </button>
       <button class="folder-card cat-comun" onclick="selectCategory('comunes')">
         <span class="folder-icon">📂</span>
         <span class="folder-name">FUNCIONES COMUNES</span>
-        <span class="folder-badge">${FUNCIONES_COMUNES.length} secciones</span>
+        <span class="folder-badge">${comunes.length} secciones</span>
       </button>
     </div>`
 }
@@ -920,7 +937,7 @@ function selectCategory(cat) {
 
 // ── Nivel 4+: Carpetas raíz de la categoría ──────────────────
 function renderRootFolders(container) {
-  const list = navState.category === 'sustantivas' ? FUNCIONES_SUSTANTIVAS : FUNCIONES_COMUNES
+  const list = raicesPermitidasParaSubdireccion(navState.subdir, navState.category)
   const catLabel = navState.category === 'sustantivas' ? 'FUNCIONES SUSTANTIVAS' : 'FUNCIONES COMUNES'
 
   container.innerHTML = `
@@ -971,7 +988,7 @@ async function loadDigitalizaciones(expedienteId, containerId) {
 
 // ── Renderiza hijos de un nodo ────────────────────────────────
 function renderFolderChildren(container, node) {
-  let children = obtenerHijosNodo(node)
+  let children = hijosVisiblesEnNavegacion(node)
   if (children.length === 0) children = subseriesDocencia(node.code)
   if (children.length === 0) {
     // Usamos el código de la serie como ID de expediente para la demo/prototipo
@@ -990,6 +1007,7 @@ function renderFolderChildren(container, node) {
           <span class="terminal-chip">📂 Serie: <strong>${node.code}</strong></span>
           <span class="terminal-chip">🗂 ${escapeHtml(node.name)}</span>
         </div>
+        ${renderMetadatosArchivo(node)}
         
         ${panelCargaSerie(node, 'Documentos Digitalizados')}
       </div>`
@@ -1005,6 +1023,7 @@ function renderFolderChildren(container, node) {
     <div class="section-header">
       <h3 class="section-title">${node.code} ${escapeHtml(node.name)}</h3>
     </div>
+    ${renderMetadatosArchivo(node)}
     ${directUploadTitle ? panelCargaSerie(node, directUploadTitle) : ''}
     <div class="folder-list">
       ${children.map(child => folderItemHTML(child)).join('')}
@@ -1013,6 +1032,30 @@ function renderFolderChildren(container, node) {
     const containerId = `pdf-container-${node.code.replace(/\./g, '-')}`
     setTimeout(() => loadDigitalizaciones(node.code, containerId), 100)
   }
+}
+
+function renderMetadatosArchivo(node) {
+  const metadata = node.archivalMetadata
+  if (!metadata) return ''
+  const formatoAnios = value => `${value} ${value === 1 ? 'año' : 'años'}`
+
+  const items = [
+    ['Valor documental', metadata.valorDocumental],
+    ['Archivo de trámite', formatoAnios(metadata.archivoTramiteAnios)],
+    ['Archivo de concentración', formatoAnios(metadata.archivoConcentracionAnios)],
+    ['Clasificación', metadata.clasificacionInformacion],
+    ['Destino final', metadata.destinoFinal],
+    ['Área responsable', metadata.areaResponsable],
+  ]
+
+  return `
+    <dl class="archival-metadata" aria-label="Datos de conservación documental">
+      ${items.map(([label, value]) => `
+        <div class="archival-metadata-item">
+          <dt>${escapeHtml(label)}</dt>
+          <dd>${escapeHtml(value)}</dd>
+        </div>`).join('')}
+    </dl>`
 }
 
 function panelCargaSerie(node, titulo) {
@@ -1032,7 +1075,7 @@ function panelCargaSerie(node, titulo) {
 
 // ── HTML de un ítem de carpeta ────────────────────────────────
 function folderItemHTML(node) {
-  const hasChildren = obtenerHijosNodo(node).length > 0
+  const hasChildren = hijosVisiblesEnNavegacion(node).length > 0
   const icon = hasChildren ? '📁' : '📄'
   const arrow = hasChildren ? '<span class="folder-arrow">›</span>' : ''
   return `
@@ -1055,7 +1098,7 @@ function openFolder(code, name, hasChildren) {
     node = list.find(n => n.code === code)
   } else {
     const parent = navState.path[navState.path.length - 1]
-    node = obtenerHijosNodo(parent).find(n => n.code === code)
+    node = hijosVisiblesEnNavegacion(parent).find(n => n.code === code)
   }
 
   if (!node) return

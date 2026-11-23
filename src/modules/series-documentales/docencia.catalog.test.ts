@@ -4,13 +4,14 @@ import { runInNewContext } from 'node:vm'
 
 const catalogSource = readFileSync(new URL('../../../public/catalog.js', import.meta.url), 'utf8')
 const catalogContext = runInNewContext(
-  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
+  `${catalogSource}\n;({ FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, FONDOS_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
 )
-const { FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
+const { FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, FONDOS_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
   JSON.parse(JSON.stringify(catalogContext)) as {
   FUNCIONES_SUSTANTIVAS: CatalogNode[]
   FUNCIONES_COMUNES: CatalogNode[]
   SERIES_POR_SUBDIRECCION: Record<string, string[]>
+  FONDOS_POR_SUBDIRECCION: Record<string, { clave: string; nombre: string }>
   CARRERAS_DOCENCIA: string[]
 }
 const obtenerHijosNodo = (node: CatalogNode) =>
@@ -22,6 +23,14 @@ type CatalogNode = {
   directUploadTitle?: string
   year?: number
   children?: CatalogNode[]
+  archivalMetadata?: {
+    valorDocumental: string
+    archivoTramiteAnios: number
+    archivoConcentracionAnios: number
+    clasificacionInformacion: string
+    destinoFinal: string
+    areaResponsable: string
+  }
 }
 
 const docencia = FUNCIONES_SUSTANTIVAS.find((section) => section.code === '3S')
@@ -39,22 +48,29 @@ test('preserves both function catalogs and all configured subdirections', () => 
     'Subdirección Académica': ['3S'],
     'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C'],
     'Subdirección de Planeación y Vinculación': ['1S', '2S', '5S'],
-    'Subdirección de Extensión y Vinculación': ['4S'],
+    'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
+  })
+  expect(FONDOS_POR_SUBDIRECCION['Subdirección de Extensión y Vinculación']).toEqual({
+    clave: '2808',
+    nombre: 'Instituto Tecnológico Superior de Escárcega',
   })
 })
 
 test('keeps each subdirection connected to its substantive or common function roots', () => {
-  for (const prefijos of Object.values(SERIES_POR_SUBDIRECCION)) {
-    const rootCodes = (roots: CatalogNode[]) => roots
-      .filter((root) => prefijos.some((prefijo) =>
-        root.code === prefijo || root.code.startsWith(`${prefijo}.`),
-      ))
-      .map((root) => root.code)
+  const allCodes: string[] = []
+  const collectCodes = (nodes: CatalogNode[]) => nodes.forEach((node) => {
+    allCodes.push(node.code)
+    if (node.children) collectCodes(node.children)
+  })
+  collectCodes(FUNCIONES_SUSTANTIVAS)
+  collectCodes(FUNCIONES_COMUNES)
 
-    expect(rootCodes(FUNCIONES_SUSTANTIVAS)).toEqual(prefijos.filter((code) => code.endsWith('S')))
-    expect(rootCodes(FUNCIONES_COMUNES)).toEqual(prefijos.filter((code) => code.endsWith('C')))
-    expect(rootCodes(FUNCIONES_SUSTANTIVAS).length + rootCodes(FUNCIONES_COMUNES).length)
-      .toBeGreaterThan(0)
+  for (const prefixes of Object.values(SERIES_POR_SUBDIRECCION)) {
+    for (const prefix of prefixes) {
+      expect(allCodes.some((code) =>
+        code === prefix || code.startsWith(`${prefix}.`) || prefix.startsWith(`${code}.`),
+      )).toBe(true)
+    }
   }
 })
 
@@ -157,5 +173,68 @@ test('preserves all series and subseries in substantive and common function cata
 
   const c10 = FUNCIONES_COMUNES.find((n) => n.code === '10C')
   expect(getCodes(c10?.children)).toEqual(['10C.01'])
+})
+
+test('preserves retention metadata for Extension and Vinculation series and terminal folders', () => {
+  const findNode = (code: string, nodes = [...FUNCIONES_SUSTANTIVAS, ...FUNCIONES_COMUNES]): CatalogNode | undefined => {
+    for (const node of nodes) {
+      if (node.code === code) return node
+      const found = node.children && findNode(code, node.children)
+      if (found) return found
+    }
+    return undefined
+  }
+  const expected = (
+    valorDocumental: string,
+    archivoTramiteAnios: number,
+    archivoConcentracionAnios: number,
+    destinoFinal: string,
+    areaResponsable: string,
+  ) => ({
+    valorDocumental,
+    archivoTramiteAnios,
+    archivoConcentracionAnios,
+    clasificacionInformacion: 'Pública',
+    destinoFinal,
+    areaResponsable,
+  })
+
+  const cultura = expected(
+    'Administrativo', 4, 5, 'Muestreo', 'Departamento de Promoción de la Cultura y el Deporte',
+  )
+  expect(findNode('1S.07')?.archivalMetadata).toEqual(cultura)
+  for (let index = 1; index <= 12; index += 1) {
+    expect(findNode(`1S.07.${String(index).padStart(2, '0')}`)?.archivalMetadata).toEqual(cultura)
+  }
+
+  const visitas = expected('Administrativo', 1, 4, 'Baja', 'Departamento de Desarrollo Emprendedor')
+  const convenios = expected(
+    'Administrativo, Legal', 5, 2, 'Histórico', 'Departamento de Vinculación e Intercambio Académico',
+  )
+  const servicioSocial = expected('Administrativo', 3, 9, 'Muestreo', 'Área de Servicio Social')
+  const emprendimiento = expected(
+    'Administrativo, Legal', 1, 5, 'Muestreo', 'Departamento de Desarrollo Emprendedor',
+  )
+  const egresados = expected(
+    'Administrativo', 6, 5, 'Histórico', 'Departamento de Vinculación e Intercambio Académico',
+  )
+  expect(findNode('4S.01')?.archivalMetadata).toEqual(visitas)
+  expect(findNode('4S.02')?.archivalMetadata).toEqual(convenios)
+  expect(findNode('4S.03')?.archivalMetadata).toEqual(servicioSocial)
+  for (let index = 1; index <= 12; index += 1) {
+    expect(findNode(`4S.03.${String(index).padStart(2, '0')}`)?.archivalMetadata).toEqual(servicioSocial)
+  }
+  expect(findNode('4S.04')?.archivalMetadata).toEqual(emprendimiento)
+  expect(findNode('4S.05')?.archivalMetadata).toEqual(egresados)
+
+  expect(findNode('5C.01')?.archivalMetadata).toEqual(
+    expected('Administrativo', 1, 2, 'Baja', 'Departamento de Difusión'),
+  )
+  expect(findNode('10C.01.01')?.archivalMetadata).toEqual(expected(
+    'Administrativo', 1, 5, 'Histórico', 'Todos los departamentos que generen oficios Internos',
+  ))
+  expect(findNode('10C.01.02')?.archivalMetadata).toEqual(expected(
+    'Administrativo', 1, 5, 'Histórico', 'Todos los departamentos que generen oficios Externos',
+  ))
 })
 

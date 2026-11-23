@@ -14,16 +14,20 @@ export class SerieDocumentalService {
     if (categoria) conditions.push(eq(seriesDocumentales.categoria, categoria))
     if (subdireccion) {
       const prefixes = getPrefijosPermitidos(subdireccion) || []
-      const catalogCategory = categoriaDePrefijo(prefixes[0])
-      conditions.push(prefixes.length && catalogCategory
-        ? and(
+      const prefixConditions = prefixes.flatMap((prefix) => {
+        const rootPrefix = obtenerPrefijoRaiz(prefix) || prefix
+        const catalogCategory = categoriaDePrefijo(rootPrefix)
+        if (!catalogCategory) return []
+
+        return [and(
           eq(seriesDocumentales.categoria, catalogCategory),
-          or(...prefixes.flatMap((prefix) => [
+          or(
             eq(seriesDocumentales.codigo, prefix),
             like(seriesDocumentales.codigo, `${prefix}.%`),
-          ]))!,
-        )!
-        : sql`false`)
+          )!,
+        )!]
+      })
+      conditions.push(prefixConditions.length ? or(...prefixConditions)! : sql`false`)
     }
     if (buscar) {
       const pattern = `%${buscar.replace(/[\\%_]/g, '\\$&')}%`
