@@ -35,19 +35,24 @@ const seriesConCarreras = [
 ]
 
 test('preserves both function catalogs and all configured subdirections', () => {
+  expect(SUBDIRECCIONES).toEqual([
+    'Subdirección Académica de Investigación e Innovación',
+    'Subdirección de Planeación y Desarrollo',
+    'Subdirección Administrativa',
+    'Subdirección de Extensión y Vinculación',
+  ])
   expect(FUNCIONES_SUSTANTIVAS.map((item) => item.code)).toEqual(['1S', '2S', '3S', '4S', '5S'])
   expect(FUNCIONES_COMUNES.map((item) => item.code)).toEqual([
     '1C', '2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C',
   ])
   expect(SERIES_POR_SUBDIRECCION).toEqual({
-    'Subdirección Académica': ['3S'],
-    'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '10C'],
-    'Subdirección de Planeación y Vinculación': [
+    'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
+    'Subdirección de Planeación y Desarrollo': [
       '1S.01', '1S.02', '1S.03', '1S.04', '1S.05', '1S.06',
       '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
     ],
+    'Subdirección Administrativa': ['1C', '2C', '3C', '4C', '10C'],
     'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
-    'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
   })
 
   expect(FONDOS_POR_SUBDIRECCION['Subdirección de Extensión y Vinculación']).toEqual({
@@ -67,7 +72,7 @@ test('keeps Investigación e Innovación scoped to its exact catalog', () => {
 })
 
 test('keeps Planeación-specific names scoped without renaming shared catalog nodes', () => {
-  expect(NOMBRES_POR_SUBDIRECCION['Subdirección de Planeación y Vinculación']).toEqual({
+  expect(NOMBRES_POR_SUBDIRECCION['Subdirección de Planeación y Desarrollo']).toEqual({
     '5S.01': 'Programa de Trabajo Anual , POA, REPOA',
     '7C.01': 'Instrumentos de control y consulta',
     '7C.02': 'Dictámenes de bajas documentales',
@@ -85,9 +90,9 @@ test('keeps Planeación-specific names scoped without renaming shared catalog no
   ])
 })
 
-test('keeps Servicios Administrativos catalog labels scoped and Capacitación subseries exact', () => {
-  expect(SUBDIRECCIONES_CON_CATALOGO_ACOTADO).toContain('Subdirección de Servicios Administrativos')
-  expect(NOMBRES_POR_SUBDIRECCION['Subdirección de Servicios Administrativos']).toEqual({
+test('keeps Administrativa catalog labels scoped and Capacitación subseries exact', () => {
+  expect(SUBDIRECCIONES_CON_CATALOGO_ACOTADO).toContain('Subdirección Administrativa')
+  expect(NOMBRES_POR_SUBDIRECCION['Subdirección Administrativa']).toEqual({
     '2C.03.01': 'administrativo',
     '2C.03.02': 'docente',
     '3C.01': 'Recursos  Estatales',
@@ -104,15 +109,15 @@ test('keeps Servicios Administrativos catalog labels scoped and Capacitación su
     ['2C.05.01', 'Administrativo'],
     ['2C.05.02', 'Docente'],
   ])
-  expect(SERIES_POR_SUBDIRECCION['Subdirección de Servicios Administrativos']).toEqual([
+  expect(SERIES_POR_SUBDIRECCION['Subdirección Administrativa']).toEqual([
     '1C', '2C', '3C', '4C', '10C',
   ])
-  expect(SERIES_POR_SUBDIRECCION['Subdirección de Planeación y Vinculación']).not.toContain('2C')
+  expect(SERIES_POR_SUBDIRECCION['Subdirección de Planeación y Desarrollo']).not.toContain('2C')
   expect(SERIES_POR_SUBDIRECCION['Subdirección de Extensión y Vinculación']).not.toContain('2C')
 })
 
 test('limits Planeación roots to its assigned substantive and common series', () => {
-  const allowed = SERIES_POR_SUBDIRECCION['Subdirección de Planeación y Vinculación']
+  const allowed = SERIES_POR_SUBDIRECCION['Subdirección de Planeación y Desarrollo']
   expect(allowed).toEqual([
     '1S.01', '1S.02', '1S.03', '1S.04', '1S.05', '1S.06',
     '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',

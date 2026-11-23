@@ -1,25 +1,32 @@
 export const SUBDIRECCIONES_SERIES = [
-  'Subdirección Académica',
-  'Subdirección de Servicios Administrativos',
-  'Subdirección de Planeación y Vinculación',
+  'Subdirección Administrativa',
+  'Subdirección de Planeación y Desarrollo',
   'Subdirección de Extensión y Vinculación',
+  'Subdirección Académica de Investigación e Innovación',
 ] as const
 
 export const SUBDIRECCIONES_SERIES_ALIAS = [
+  'Subdirección Académica',
   'Subdirección de Investigación e Innovación',
-  'Subdirección Académica de Investigación e Innovación',
   'Subdirección de Academia',
+  'Subdirección de Servicios Administrativos',
   'Subdirección de Administración',
+  'Subdirección de Planeación y Vinculación',
   'Subdirección de Planeación y Vinculación / Desarrollo',
-  'Subdirección de Planeación y Desarrollo',
   'Subdirección de Planeación',
   'Subdirección de Extensión',
 ] as const
 
 const SERIES_POR_SUBDIRECCION: Record<string, readonly string[]> = {
+  'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
+  'Subdirección de Planeación y Desarrollo': [
+    '1S.01', '1S.02', '1S.03', '1S.04', '1S.05', '1S.06',
+    '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
+  ],
+  'Subdirección Administrativa': ['1C', '2C', '3C', '4C', '10C'],
+  'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
   'Subdirección Académica': ['3S'],
   'Subdirección de Investigación e Innovación': ['3S'],
-  'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
   'Subdirección de Academia': ['3S'],
   'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '10C'],
   'Subdirección de Administración': ['1C', '2C', '3C', '4C', '10C'],
@@ -28,9 +35,7 @@ const SERIES_POR_SUBDIRECCION: Record<string, readonly string[]> = {
     '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
   ],
   'Subdirección de Planeación y Vinculación / Desarrollo': ['1S', '2S', '5S'],
-  'Subdirección de Planeación y Desarrollo': ['1S', '2S', '5S'],
   'Subdirección de Planeación': ['1S', '2S', '5S'],
-  'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
   'Subdirección de Extensión': ['4S'],
 }
 

@@ -179,7 +179,7 @@ let currentDivision = ''
 // navState mantiene el camino actual del usuario
 let navState = {
   year: null,           // e.g. 2026
-  subdir: null,         // e.g. 'Subdirección Académica'
+  subdir: null,         // selected subdirection
   category: null,       // 'sustantivas' | 'comunes'
   path: [],             // array de nodos { code, name } desde raíz al actual
 }
@@ -889,7 +889,7 @@ function selectYear(year) {
 
 // ── Nivel 2: Subdirecciones ───────────────────────────────────
 function renderSubdirecciones(container) {
-  const icons = ['📚', '📋', '🏛️', '🌐', '🔬']
+  const icons = ['🔬', '🏛️', '📋', '🌐']
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">Año: ${navState.year}</h3>
@@ -927,7 +927,7 @@ function renderCategories(container) {
       <p class="section-sub">Selecciona el tipo de funciones</p>
     </div>
     <div class="folder-grid cat-grid">
-      ${navState.subdir === 'Subdirección de Servicios Administrativos' ? '' : `
+      ${navState.subdir === 'Subdirección Administrativa' ? '' : `
         <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
           <span class="folder-icon">📁</span>
           <span class="folder-name">FUNCIONES SUSTANTIVAS</span>
@@ -1337,7 +1337,7 @@ function openNuevoUsuarioModal() {
   openModal('➕ Nuevo Usuario', `
     <div class="field-group">
       <label>Subdirección / Departamento</label>
-      <input id="m-division" list="subdirecciones-itse" placeholder="Ej. Subdirección Académica" />
+      <input id="m-division" list="subdirecciones-itse" placeholder="Ej. Subdirección Administrativa" />
       <datalist id="subdirecciones-itse">${SUBDIRECCIONES.map(nombre => `<option value="${escapeHtml(nombre)}"></option>`).join('')}</datalist>
     </div>
     <div class="field-group">
@@ -2132,7 +2132,7 @@ function openEditUsuarioModal(idx) {
   openModal(`✏️ Editar Usuario — ${u.username || ''}`, `
     <div class="field-group">
       <label>Subdirección / Departamento</label>
-      <input id="eu-division" list="subdirecciones-itse" value="${u.division || ''}" placeholder="Ej. Subdirección Académica" />
+      <input id="eu-division" list="subdirecciones-itse" value="${u.division || ''}" placeholder="Ej. Subdirección Administrativa" />
       <datalist id="subdirecciones-itse">${SUBDIRECCIONES.map(nombre => `<option value="${escapeHtml(nombre)}"></option>`).join('')}</datalist>
     </div>
     <div class="field-group">

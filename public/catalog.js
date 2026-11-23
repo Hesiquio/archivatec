@@ -2,28 +2,26 @@
 // CONTENIDO LITERAL - NO EDITAR NOMBRES
 
 const SUBDIRECCIONES = [
-  'Subdirección Académica',
-  'Subdirección de Servicios Administrativos',
-  'Subdirección de Planeación y Vinculación',
-  'Subdirección de Extensión y Vinculación',
   'Subdirección Académica de Investigación e Innovación',
+  'Subdirección de Planeación y Desarrollo',
+  'Subdirección Administrativa',
+  'Subdirección de Extensión y Vinculación',
 ]
 
 const SERIES_POR_SUBDIRECCION = {
-  'Subdirección Académica': ['3S'],
-  'Subdirección de Servicios Administrativos': ['1C', '2C', '3C', '4C', '10C'],
-  'Subdirección de Planeación y Vinculación': [
+  'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
+  'Subdirección de Planeación y Desarrollo': [
     '1S.01', '1S.02', '1S.03', '1S.04', '1S.05', '1S.06',
     '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',
   ],
+  'Subdirección Administrativa': ['1C', '2C', '3C', '4C', '10C'],
   'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
-  'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
 }
 
 const SUBDIRECCIONES_CON_CATALOGO_ACOTADO = new Set([
-  'Subdirección de Servicios Administrativos',
+  'Subdirección Administrativa',
   'Subdirección de Extensión y Vinculación',
-  'Subdirección de Planeación y Vinculación',
+  'Subdirección de Planeación y Desarrollo',
   'Subdirección Académica de Investigación e Innovación',
 ])
 
@@ -31,14 +29,14 @@ const NOMBRES_POR_SUBDIRECCION = {
   'Subdirección Académica de Investigación e Innovación': {
     '3S.14.01': 'Proyectos individuales',
   },
-  'Subdirección de Servicios Administrativos': {
+  'Subdirección Administrativa': {
     '2C.03.01': 'administrativo',
     '2C.03.02': 'docente',
     '3C.01': 'Recursos  Estatales',
     '4C.01': 'Mantenimiento preventivo y/o correctivo de la infraestructura y equipo',
     '10C': 'VINCULACION INSTITUCIONAL',
   },
-  'Subdirección de Planeación y Vinculación': {
+  'Subdirección de Planeación y Desarrollo': {
     '5S.01': 'Programa de Trabajo Anual , POA, REPOA',
     '7C.01': 'Instrumentos de control y consulta',
     '7C.02': 'Dictámenes de bajas documentales',
