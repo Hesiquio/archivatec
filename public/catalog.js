@@ -24,6 +24,13 @@ const SUBDIRECCIONES_CON_CATALOGO_ACOTADO = new Set([
 ])
 
 const NOMBRES_POR_SUBDIRECCION = {
+  'Subdirección de Servicios Administrativos': {
+    '2C.03.01': 'administrativo',
+    '2C.03.02': 'docente',
+    '3C.01': 'Recursos  Estatales',
+    '4C.01': 'Mantenimiento preventivo y/o correctivo de la infraestructura y equipo',
+    '10C': 'VINCULACION INSTITUCIONAL',
+  },
   'Subdirección de Planeación y Vinculación': {
     '5S.01': 'Programa de Trabajo Anual , POA, REPOA',
     '7C.01': 'Instrumentos de control y consulta',
@@ -262,8 +269,8 @@ const FUNCIONES_COMUNES = [
         code: '2C.04',
         name: 'Capacitación',
         children: [
-          { code: '2C.04.01', name: 'Administrativo' },
-          { code: '2C.04.02', name: 'Docente' },
+          { code: '2C.05.01', name: 'Administrativo' },
+          { code: '2C.05.02', name: 'Docente' },
         ],
       },
       { code: '2C.05', name: 'Ambiente laboral' },

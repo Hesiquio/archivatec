@@ -72,6 +72,29 @@ test('keeps Planeación-specific names scoped without renaming shared catalog no
   ])
 })
 
+test('keeps Servicios Administrativos catalog labels scoped and Capacitación subseries exact', () => {
+  expect(NOMBRES_POR_SUBDIRECCION['Subdirección de Servicios Administrativos']).toEqual({
+    '2C.03.01': 'administrativo',
+    '2C.03.02': 'docente',
+    '3C.01': 'Recursos  Estatales',
+    '4C.01': 'Mantenimiento preventivo y/o correctivo de la infraestructura y equipo',
+    '10C': 'VINCULACION INSTITUCIONAL',
+  })
+
+  const recursosHumanos = FUNCIONES_COMUNES.find((section) => section.code === '2C')
+  const personal = recursosHumanos?.children?.find((series) => series.code === '2C.03')
+  expect(personal?.children?.map((node) => node.name)).toEqual(['Administrativo', 'Docente'])
+
+  const capacitacion = recursosHumanos?.children?.find((series) => series.code === '2C.04')
+  expect(capacitacion?.children?.map((node) => [node.code, node.name])).toEqual([
+    ['2C.05.01', 'Administrativo'],
+    ['2C.05.02', 'Docente'],
+  ])
+  expect(SERIES_POR_SUBDIRECCION['Subdirección de Servicios Administrativos']).toContain('2C')
+  expect(SERIES_POR_SUBDIRECCION['Subdirección de Planeación y Vinculación']).not.toContain('2C')
+  expect(SERIES_POR_SUBDIRECCION['Subdirección de Extensión y Vinculación']).not.toContain('2C')
+})
+
 test('limits Planeación roots to its assigned substantive and common series', () => {
   const allowed = SERIES_POR_SUBDIRECCION['Subdirección de Planeación y Vinculación']
   expect(allowed).toEqual([
