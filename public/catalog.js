@@ -6,6 +6,7 @@ const SUBDIRECCIONES = [
   'Subdirección de Planeación y Desarrollo',
   'Subdirección Administrativa',
   'Subdirección de Extensión y Vinculación',
+  'Dirección General',
 ]
 
 const SERIES_POR_SUBDIRECCION = {
@@ -16,6 +17,7 @@ const SERIES_POR_SUBDIRECCION = {
   ],
   'Subdirección Administrativa': ['1C', '2C', '3C', '4C', '10C'],
   'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
+  'Dirección General': ['10C'],
 }
 
 const SUBDIRECCIONES_CON_CATALOGO_ACOTADO = new Set([
@@ -23,12 +25,16 @@ const SUBDIRECCIONES_CON_CATALOGO_ACOTADO = new Set([
   'Subdirección de Extensión y Vinculación',
   'Subdirección de Planeación y Desarrollo',
   'Subdirección Académica de Investigación e Innovación',
+  'Dirección General',
 ])
 
 const NOMBRES_POR_SUBDIRECCION = {
   'Subdirección Académica de Investigación e Innovación': {
     '3S.14.01': 'Gestión del curso',
     '3S.14.02': 'Proyectos individuales',
+  },
+  'Dirección General': {
+    '10C': 'Vinculación Institucional',
   },
   'Subdirección Administrativa': {
     '2C.03.01': 'administrativo',
@@ -114,6 +120,13 @@ function obtenerHijosNodo(node) {
 
 function obtenerHijosVisiblesPorSubdireccion(node, subdireccion) {
   const children = obtenerHijosNodo(node)
+  if (subdireccion === 'Dirección General') {
+    if (node.code === '10C') return children.filter(child => child.code === '10C.01')
+    if (node.code === '10C.01') {
+      return children.filter(child => child.code === '10C.01.01' || child.code === '10C.01.02')
+    }
+    return []
+  }
   if (!SUBDIRECCIONES_CON_CATALOGO_ACOTADO.has(subdireccion)) return children
 
   const prefixes = SERIES_POR_SUBDIRECCION[subdireccion] || []

@@ -879,7 +879,7 @@ function selectYear(year) {
 
 // ── Nivel 2: Subdirecciones ───────────────────────────────────
 function renderSubdirecciones(container) {
-  const icons = ['🔬', '🏛️', '📋', '🌐']
+  const icons = ['🔬', '🏛️', '📋', '🌐', '🏢']
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">Año: ${navState.year}</h3>
@@ -917,7 +917,7 @@ function renderCategories(container) {
       <p class="section-sub">Selecciona el tipo de funciones</p>
     </div>
     <div class="folder-grid cat-grid">
-      ${navState.subdir === 'Subdirección Administrativa' ? '' : `
+      ${sustantivas.length === 0 ? '' : `
         <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
           <span class="folder-icon">📁</span>
           <span class="folder-name">FUNCIONES SUSTANTIVAS</span>

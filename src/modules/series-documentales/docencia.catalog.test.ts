@@ -42,6 +42,7 @@ test('preserves both function catalogs and all configured subdirections', () => 
     'Subdirección de Planeación y Desarrollo',
     'Subdirección Administrativa',
     'Subdirección de Extensión y Vinculación',
+    'Dirección General',
   ])
   expect(FUNCIONES_SUSTANTIVAS.map((item) => item.code)).toEqual(['1S', '2S', '3S', '4S', '5S'])
   expect(FUNCIONES_COMUNES.map((item) => item.code)).toEqual([
@@ -55,6 +56,7 @@ test('preserves both function catalogs and all configured subdirections', () => 
     ],
     'Subdirección Administrativa': ['1C', '2C', '3C', '4C', '10C'],
     'Subdirección de Extensión y Vinculación': ['1S.07', '4S', '5C', '10C'],
+    'Dirección General': ['10C'],
   })
 
   expect(FONDOS_POR_SUBDIRECCION['Subdirección de Extensión y Vinculación']).toEqual({
@@ -72,6 +74,36 @@ test('keeps Investigación e Innovación scoped to its exact catalog', () => {
     '3S.14.02': 'Proyectos individuales',
   })
   expect(SERIES_POR_SUBDIRECCION[saii]).toEqual(['3S', '10C'])
+})
+
+test('limits Dirección General to common 10C.01 with only its two subseries', () => {
+  const direccionGeneral = 'Dirección General'
+  const diezC = FUNCIONES_COMUNES.find((section) => section.code === '10C')!
+  const vinculacion = diezC.children!.find((item) => item.code === '10C.01')!
+
+  expect(SUBDIRECCIONES[4]).toBe(direccionGeneral)
+  expect(SUBDIRECCIONES_CON_CATALOGO_ACOTADO).toContain(direccionGeneral)
+  expect(NOMBRES_POR_SUBDIRECCION[direccionGeneral]).toEqual({
+    '10C': 'Vinculación Institucional',
+  })
+  expect(FUNCIONES_SUSTANTIVAS.filter((item) =>
+    SERIES_POR_SUBDIRECCION[direccionGeneral].some((prefix) =>
+      item.code === prefix || item.code.startsWith(`${prefix}.`) || prefix.startsWith(`${item.code}.`),
+    ),
+  )).toEqual([])
+  expect(obtenerHijosVisiblesPorSubdireccion({
+    ...diezC,
+    children: [...diezC.children!, { code: '10C.02', name: 'No autorizado' }],
+  }, direccionGeneral).map((item) => [item.code, item.name])).toEqual([
+    ['10C.01', 'Vinculación'],
+  ])
+  expect(obtenerHijosVisiblesPorSubdireccion({
+    ...vinculacion,
+    children: [...vinculacion.children!, { code: '10C.01.03', name: 'No autorizado' }],
+  }, direccionGeneral).map((item) => [item.code, item.name])).toEqual([
+    ['10C.01.01', 'Interna'],
+    ['10C.01.02', 'Externa'],
+  ])
 })
 
 test('keeps Planeación-specific names scoped without renaming shared catalog nodes', () => {

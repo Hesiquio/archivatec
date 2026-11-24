@@ -3,6 +3,7 @@ export const SUBDIRECCIONES_SERIES = [
   'Subdirección de Planeación y Desarrollo',
   'Subdirección de Extensión y Vinculación',
   'Subdirección Académica de Investigación e Innovación',
+  'Dirección General',
 ] as const
 
 export const SUBDIRECCIONES_SERIES_ALIAS = [
@@ -19,6 +20,7 @@ export const SUBDIRECCIONES_SERIES_ALIAS = [
 
 const SERIES_POR_SUBDIRECCION: Record<string, readonly string[]> = {
   'Subdirección Académica de Investigación e Innovación': ['3S', '10C'],
+  'Dirección General': ['10C'],
   'Subdirección de Planeación y Desarrollo': [
     '1S.01', '1S.02', '1S.03', '1S.04', '1S.05', '1S.06',
     '2S.01', '2S.02', '5S.01', '5S.02', '6C', '7C', '8C', '9C', '10C',

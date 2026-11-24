@@ -7,9 +7,12 @@ import {
   obtenerCarreraDocenciaPorCodigo,
   obtenerPrefijoRaiz,
   obtenerSubdireccionPorCodigo,
+  SUBDIRECCIONES_SERIES,
 } from './series-documental.catalog'
 
 test('maps each subdirection to only its authorized catalog roots', () => {
+  expect(SUBDIRECCIONES_SERIES.slice(-1)).toEqual(['Dirección General'])
+  expect(getPrefijosPermitidos('Dirección General')).toEqual(['10C'])
   expect(getPrefijosPermitidos('Subdirección Académica de Investigación e Innovación')).toEqual(['3S', '10C'])
   expect(getPrefijosPermitidos('Subdirección de Investigación e Innovación')).toEqual(['3S'])
   expect(getPrefijosPermitidos('Subdirección Administrativa')).toEqual([
