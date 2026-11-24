@@ -1174,10 +1174,15 @@ body {
   justify-content: center;
 }
 
-/* Subdirecciones: 4 columnas exactas, centradas */
+/* Subdirecciones: 5 columnas adaptables, centradas */
 .subdir-grid {
-  grid-template-columns: repeat(4, 180px);
-  justify-content: center;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  max-width: 980px;
+  margin-inline: auto;
+}
+
+.subdir-grid .folder-card {
+  width: 100%;
 }
 
 /* Grid de categorías (solo 2 tarjetas): centrado global */

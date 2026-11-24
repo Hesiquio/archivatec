@@ -878,17 +878,24 @@ function selectYear(year) {
 }
 
 // ── Nivel 2: Subdirecciones ───────────────────────────────────
+const ICONOS_SUBDIRECCION = {
+  'Subdirección Académica de Investigación e Innovación': '🔬',
+  'Subdirección de Planeación y Desarrollo': '🏛️',
+  'Subdirección Administrativa': '📋',
+  'Subdirección de Extensión y Vinculación': '🌐',
+  'Dirección General': '🏢',
+}
+
 function renderSubdirecciones(container) {
-  const icons = ['🔬', '🏛️', '📋', '🌐', '🏢']
   container.innerHTML = `
     <div class="section-header">
       <h3 class="section-title">Año: ${navState.year}</h3>
-      <p class="section-sub">Selecciona una subdirección</p>
+      <p class="section-sub">Selecciona una subdirección o la Dirección General</p>
     </div>
     <div class="folder-grid subdir-grid">
-      ${SUBDIRECCIONES.map((s, i) => `
+      ${SUBDIRECCIONES.map((s) => `
         <button class="folder-card" onclick="selectSubdir('${s.replace(/'/g, "\\'")}')">
-          <span class="folder-icon">${icons[i]}</span>
+          <span class="folder-icon">${ICONOS_SUBDIRECCION[s] || '📁'}</span>
           <span class="folder-name">${s}</span>
         </button>
       `).join('')}
@@ -908,6 +915,10 @@ async function selectSubdir(subdir) {
 }
 
 // ── Nivel 3: Categorías (Sustantivas / Comunes) ───────────────
+function etiquetaSecciones(total) {
+  return `${total} ${total === 1 ? 'sección' : 'secciones'}`
+}
+
 function renderCategories(container) {
   const sustantivas = raicesPermitidasParaSubdireccion(navState.subdir, 'sustantivas')
   const comunes = raicesPermitidasParaSubdireccion(navState.subdir, 'comunes')
@@ -921,13 +932,13 @@ function renderCategories(container) {
         <button class="folder-card cat-sustantiva" onclick="selectCategory('sustantivas')">
           <span class="folder-icon">📁</span>
           <span class="folder-name">FUNCIONES SUSTANTIVAS</span>
-          <span class="folder-badge">${sustantivas.length} secciones</span>
+          <span class="folder-badge">${etiquetaSecciones(sustantivas.length)}</span>
         </button>
       `}
       <button class="folder-card cat-comun" onclick="selectCategory('comunes')">
         <span class="folder-icon">📂</span>
         <span class="folder-name">FUNCIONES COMUNES</span>
-        <span class="folder-badge">${comunes.length} secciones</span>
+        <span class="folder-badge">${etiquetaSecciones(comunes.length)}</span>
       </button>
     </div>`
 }
