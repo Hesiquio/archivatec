@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm'
 
 const catalogSource = readFileSync(new URL('../../../public/catalog.js', import.meta.url), 'utf8')
 const catalogContext = runInNewContext(
-  `${catalogSource}\n;({ SUBDIRECCIONES, FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO: Array.from(SUBDIRECCIONES_CON_CATALOGO_ACOTADO), FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo })`,
+  `${catalogSource}\n;({ SUBDIRECCIONES, FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO: Array.from(SUBDIRECCIONES_CON_CATALOGO_ACOTADO), FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA, obtenerHijosNodo, obtenerHijosVisiblesPorSubdireccion })`,
 )
 const { SUBDIRECCIONES, FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUBDIRECCION, SUBDIRECCIONES_CON_CATALOGO_ACOTADO, FONDOS_POR_SUBDIRECCION, NOMBRES_POR_SUBDIRECCION, CARRERAS_DOCENCIA } =
   JSON.parse(JSON.stringify(catalogContext)) as {
@@ -19,6 +19,8 @@ const { SUBDIRECCIONES, FUNCIONES_SUSTANTIVAS, FUNCIONES_COMUNES, SERIES_POR_SUB
 }
 const obtenerHijosNodo = (node: CatalogNode) =>
   JSON.parse(JSON.stringify(catalogContext.obtenerHijosNodo(node))) as CatalogNode[]
+const obtenerHijosVisiblesPorSubdireccion = (node: CatalogNode, subdireccion: string) =>
+  JSON.parse(JSON.stringify(catalogContext.obtenerHijosVisiblesPorSubdireccion(node, subdireccion))) as CatalogNode[]
 
 type CatalogNode = {
   code: string
@@ -169,6 +171,29 @@ test('adds the 11 career folders only to the requested Docencia series', () => {
     const item = series.find((candidate) => candidate.code === code)
     expect(item?.children?.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
   }
+})
+
+test('shows Docencia career folders in SAII navigation without exposing them elsewhere', () => {
+  const series = docencia?.children || []
+  const saii = 'Subdirección Académica de Investigación e Innovación'
+  const extension = 'Subdirección de Extensión y Vinculación'
+
+  for (const code of seriesConCarreras) {
+    const node = series.find((item) => item.code === code)!
+    const visibleChildren = obtenerHijosVisiblesPorSubdireccion(node, saii)
+    const careerChildren = code === '3S.14' ? visibleChildren.slice(1) : visibleChildren
+
+    expect(careerChildren.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+  }
+
+  const eventos = series.find((item) => item.code === '3S.15')!
+  expect(obtenerHijosVisiblesPorSubdireccion(eventos, extension)).toEqual([])
+
+  const gestion = series.find((item) => item.code === '3S.14')!
+  expect(obtenerHijosVisiblesPorSubdireccion(gestion, saii)[0]).toEqual({
+    code: '3S.14.01',
+    name: 'Proyectos Individuales',
+  })
 })
 
 test('keeps direct course-management documents separate from projects and career folders', () => {

@@ -96,6 +96,18 @@ function obtenerHijosNodo(node) {
   return node.children || []
 }
 
+function obtenerHijosVisiblesPorSubdireccion(node, subdireccion) {
+  const children = obtenerHijosNodo(node)
+  if (!SUBDIRECCIONES_CON_CATALOGO_ACOTADO.has(subdireccion)) return children
+
+  const prefixes = SERIES_POR_SUBDIRECCION[subdireccion] || []
+  return children.filter(child => prefixes.some(prefix =>
+    child.code === prefix
+    || child.code.startsWith(`${prefix}.`)
+    || prefix.startsWith(`${child.code}.`)
+  ))
+}
+
 const FUNCIONES_SUSTANTIVAS = [
   {
     code: '1S',

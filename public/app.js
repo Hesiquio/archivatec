@@ -251,17 +251,7 @@ function raicesPermitidasParaSubdireccion(subdireccion, categoria) {
 }
 
 function hijosVisiblesEnNavegacion(node) {
-  const children = obtenerHijosNodo(node)
-  if (!SUBDIRECCIONES_CON_CATALOGO_ACOTADO.has(navState.subdir)) return children
-  const prefixes = prefijosPermitidosParaSubdireccion(navState.subdir)
-  const visibleChildren = children.filter(child => coincideConPrefijosDeCatalogo(child.code, prefixes))
-  if (
-    navState.subdir === 'Subdirección Académica de Investigación e Innovación'
-    && SERIES_DOCENCIA_CON_CARRERAS.has(node.code)
-  ) {
-    return visibleChildren.filter(child => node.code === '3S.14' && child.code === '3S.14.01')
-  }
-  return visibleChildren
+  return obtenerHijosVisiblesPorSubdireccion(node, navState.subdir)
 }
 
 function subdireccionParaCodigo(codigo) {
