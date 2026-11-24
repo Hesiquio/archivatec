@@ -56,7 +56,7 @@ beforeEach(() => {
 
 test('creates a signed upload URL without sending PDF bytes through the API', async () => {
   const token = await tokenFor('ARCHIVISTA', true)
-  const response = await app.request('/api/v1/digitalizacion/upload-url/3S.14.01', {
+  const response = await app.request('/api/v1/digitalizacion/upload-url/3S.14.01.01', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ fileName: 'Acta de academia.pdf', contentType: 'application/pdf' }),
@@ -71,7 +71,7 @@ test('creates a signed upload URL without sending PDF bytes through the API', as
     success: true,
     data: { bucket: env.STORAGE_BUCKET, token: 'signed-upload-token' },
   })
-  expect(payload.data.path).toMatch(/^digitalizados\/3S\.14\.01\/\d{13}-[0-9a-f-]{36}-Actadeacademia\.pdf$/i)
+  expect(payload.data.path).toMatch(/^digitalizados\/3S\.14\.01\.01\/\d{13}-[0-9a-f-]{36}-Actadeacademia\.pdf$/i)
   expect(createSignedUploadUrl).toHaveBeenCalledWith(env.STORAGE_BUCKET, payload.data.path)
 })
 
@@ -89,8 +89,8 @@ test('requires the granular upload permission before issuing a signed URL', asyn
 
 test('registers metadata only after the object exists in Storage', async () => {
   const token = await tokenFor('ARCHIVISTA', true)
-  const path = 'digitalizados/3S.14.01/1700000000000-550e8400-e29b-41d4-a716-446655440000-acta.pdf'
-  const response = await app.request('/api/v1/digitalizacion/upload/3S.14.01', {
+  const path = 'digitalizados/3S.14.01.01/1700000000000-550e8400-e29b-41d4-a716-446655440000-acta.pdf'
+  const response = await app.request('/api/v1/digitalizacion/upload/3S.14.01.01', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, checksumSha256: 'a'.repeat(64) }),
@@ -99,7 +99,7 @@ test('registers metadata only after the object exists in Storage', async () => {
   expect(response.status).toBe(201)
   expect(fileExists).toHaveBeenCalledWith(env.STORAGE_BUCKET, path)
   expect(iniciar).toHaveBeenCalledWith({
-    expedienteId: '3S.14.01',
+    expedienteId: '3S.14.01.01',
     urlArchivo: 'https://storage.example.test/public.pdf',
     totalPaginas: 1,
     checksumSha256: 'a'.repeat(64),
@@ -111,11 +111,11 @@ test('registers metadata only after the object exists in Storage', async () => {
 test('does not register metadata when Storage has not completed the upload', async () => {
   fileExists.mockResolvedValue(false)
   const token = await tokenFor('ARCHIVISTA', true)
-  const response = await app.request('/api/v1/digitalizacion/upload/3S.14.01', {
+  const response = await app.request('/api/v1/digitalizacion/upload/3S.14.01.01', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      path: 'digitalizados/3S.14.01/1700000000000-550e8400-e29b-41d4-a716-446655440000-acta.pdf',
+      path: 'digitalizados/3S.14.01.01/1700000000000-550e8400-e29b-41d4-a716-446655440000-acta.pdf',
       checksumSha256: 'a'.repeat(64),
     }),
   })

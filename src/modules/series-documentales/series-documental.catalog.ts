@@ -48,7 +48,7 @@ export const FONDOS_POR_SUBDIRECCION: Readonly<Record<string, { clave: string; n
 
 const SERIES_DOCENCIA_CON_CARRERAS = new Set([
   '3S.01', '3S.02', '3S.03', '3S.04', '3S.05', '3S.06',
-  '3S.07', '3S.08', '3S.09', '3S.12', '3S.14', '3S.15',
+  '3S.07', '3S.08', '3S.09', '3S.12', '3S.15',
 ])
 
 const CARRERAS_DOCENCIA = [
@@ -95,8 +95,7 @@ export function obtenerCarreraDocenciaPorCodigo(codigo: string): string | undefi
   const match = codigo.match(/^(3S\.\d{2})\.(\d{2})$/)
   if (!match || !SERIES_DOCENCIA_CON_CARRERAS.has(match[1])) return undefined
 
-  const offset = match[1] === '3S.14' ? 2 : 1
-  const index = Number(match[2]) - offset
+  const index = Number(match[2]) - 1
   return CARRERAS_DOCENCIA[index]
 }
 

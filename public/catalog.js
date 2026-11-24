@@ -70,7 +70,7 @@ const CARRERAS_DOCENCIA = [
 
 const SERIES_DOCENCIA_CON_CARRERAS = new Set([
   '3S.01', '3S.02', '3S.03', '3S.04', '3S.05', '3S.06',
-  '3S.07', '3S.08', '3S.09', '3S.12', '3S.14', '3S.15',
+  '3S.07', '3S.08', '3S.09', '3S.12', '3S.15',
 ])
 
 function subseriesCarreras(codigoSerie, primerIndice = 1) {
@@ -88,7 +88,6 @@ function subseriesCarrerasAnidadas(codigoCarpeta) {
 }
 
 function subseriesDocencia(codigoSerie) {
-  if (!SERIES_DOCENCIA_CON_CARRERAS.has(codigoSerie)) return []
   if (codigoSerie === '3S.14') {
     return [
       {
@@ -103,6 +102,7 @@ function subseriesDocencia(codigoSerie) {
       },
     ]
   }
+  if (!SERIES_DOCENCIA_CON_CARRERAS.has(codigoSerie)) return []
   return subseriesCarreras(codigoSerie)
 }
 

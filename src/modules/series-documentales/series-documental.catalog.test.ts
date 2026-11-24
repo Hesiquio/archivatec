@@ -68,13 +68,14 @@ test('keeps mixed function roots scoped to Extension and Planning', () => {
 
 test('maps only configured Docencia career subseries to their career', () => {
   expect(obtenerCarreraDocenciaPorCodigo('3S.01.01')).toBe('Licenciatura en Administración')
-  expect(obtenerCarreraDocenciaPorCodigo('3S.14.02')).toBe('Licenciatura en Administración')
-  expect(obtenerCarreraDocenciaPorCodigo('3S.14.12')).toBe('Ingeniería en Inteligencia Artificial')
   expect(obtenerCarreraDocenciaPorCodigo('3S.14.01.01')).toBe('Licenciatura en Administración')
   expect(obtenerCarreraDocenciaPorCodigo('3S.14.01.11')).toBe('Ingeniería en Inteligencia Artificial')
   expect(obtenerCarreraDocenciaPorCodigo('3S.14.02.01')).toBe('Licenciatura en Administración')
   expect(obtenerCarreraDocenciaPorCodigo('3S.14.02.11')).toBe('Ingeniería en Inteligencia Artificial')
   expect(obtenerCarreraDocenciaPorCodigo('3S.14.01')).toBeUndefined()
+  expect(obtenerCarreraDocenciaPorCodigo('3S.14.02')).toBeUndefined()
+  expect(obtenerCarreraDocenciaPorCodigo('3S.14.03')).toBeUndefined()
+  expect(obtenerCarreraDocenciaPorCodigo('3S.14.12')).toBeUndefined()
   expect(obtenerCarreraDocenciaPorCodigo('3S.10.01')).toBeUndefined()
   expect(obtenerCarreraDocenciaPorCodigo('3S.15.12')).toBeUndefined()
 })

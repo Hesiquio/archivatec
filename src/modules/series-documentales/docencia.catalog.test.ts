@@ -207,12 +207,20 @@ test('organizes 3S.14 into two folders with 11 careers in each', () => {
     ['3S.14.01', 'Gestión del curso'],
     ['3S.14.02', 'Proyectos individuales'],
   ])
+  expect(obtenerHijosNodo({
+    ...gestion!,
+    children: [{ code: '3S.14.12', name: 'Ingeniería en Inteligencia Artificial' }],
+  }).map((child) => child.code)).toEqual(['3S.14.01', '3S.14.02'])
+
   for (const [folderIndex, folderCode] of ['3S.14.01', '3S.14.02'].entries()) {
     const folder = gestion?.children?.[folderIndex]
     expect(folder?.children?.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
     expect(folder?.children?.map((child) => child.code)).toEqual(
       CARRERAS_DOCENCIA.map((_, index) => `${folderCode}.${String(index + 1).padStart(2, '0')}`),
     )
+    expect(folder?.children?.every((career) =>
+      obtenerHijosVisiblesPorSubdireccion(career, 'Subdirección Académica de Investigación e Innovación').length === 0,
+    )).toBe(true)
   }
 })
 
