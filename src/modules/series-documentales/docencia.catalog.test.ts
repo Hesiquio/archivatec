@@ -68,7 +68,8 @@ test('keeps Investigación e Innovación scoped to its exact catalog', () => {
   expect(SUBDIRECCIONES).toContain(saii)
   expect(SUBDIRECCIONES_CON_CATALOGO_ACOTADO).toContain(saii)
   expect(NOMBRES_POR_SUBDIRECCION[saii]).toEqual({
-    '3S.14.01': 'Proyectos individuales',
+    '3S.14.01': 'Gestión del curso',
+    '3S.14.02': 'Proyectos individuales',
   })
   expect(SERIES_POR_SUBDIRECCION[saii]).toEqual(['3S', '10C'])
 })
@@ -181,29 +182,38 @@ test('shows Docencia career folders in SAII navigation without exposing them els
   for (const code of seriesConCarreras) {
     const node = series.find((item) => item.code === code)!
     const visibleChildren = obtenerHijosVisiblesPorSubdireccion(node, saii)
-    const careerChildren = code === '3S.14' ? visibleChildren.slice(1) : visibleChildren
-
-    expect(careerChildren.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+    if (code !== '3S.14') {
+      expect(visibleChildren.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+    }
   }
 
   const eventos = series.find((item) => item.code === '3S.15')!
   expect(obtenerHijosVisiblesPorSubdireccion(eventos, extension)).toEqual([])
 
   const gestion = series.find((item) => item.code === '3S.14')!
-  expect(obtenerHijosVisiblesPorSubdireccion(gestion, saii)[0]).toEqual({
-    code: '3S.14.01',
-    name: 'Proyectos Individuales',
-  })
+  expect(obtenerHijosVisiblesPorSubdireccion(gestion, saii).map((child) => ({
+    code: child.code,
+    name: child.name,
+  }))).toEqual([
+    { code: '3S.14.01', name: 'Gestión del curso' },
+    { code: '3S.14.02', name: 'Proyectos individuales' },
+  ])
 })
 
-test('keeps direct course-management documents separate from projects and career folders', () => {
+test('organizes 3S.14 into two folders with 11 careers in each', () => {
   const gestion = docencia?.children?.find((item) => item.code === '3S.14')
   expect(gestion?.directUploadTitle).toBe('Información general de gestión del curso')
-  expect(gestion?.children?.[0]).toEqual({ code: '3S.14.01', name: 'Proyectos Individuales' })
-  expect(gestion?.children?.slice(1).map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
-  expect(gestion?.children?.slice(1).map((child) => child.code)).toEqual(
-    CARRERAS_DOCENCIA.map((_, index) => `3S.14.${String(index + 2).padStart(2, '0')}`),
-  )
+  expect(gestion?.children?.map((child) => [child.code, child.name])).toEqual([
+    ['3S.14.01', 'Gestión del curso'],
+    ['3S.14.02', 'Proyectos individuales'],
+  ])
+  for (const [folderIndex, folderCode] of ['3S.14.01', '3S.14.02'].entries()) {
+    const folder = gestion?.children?.[folderIndex]
+    expect(folder?.children?.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+    expect(folder?.children?.map((child) => child.code)).toEqual(
+      CARRERAS_DOCENCIA.map((_, index) => `${folderCode}.${String(index + 1).padStart(2, '0')}`),
+    )
+  }
 })
 
 test('resolves Docencia subfolders by code even when a node has no children', () => {
@@ -216,8 +226,13 @@ test('resolves Docencia subfolders by code even when a node has no children', ()
 
       const children = obtenerHijosNodo({ ...node!, children: undefined, year })
       if (code === '3S.14') {
-        expect(children[0]).toEqual({ code: '3S.14.01', name: 'Proyectos Individuales' })
-        expect(children.slice(1).map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+        expect(children.map((child) => [child.code, child.name])).toEqual([
+          ['3S.14.01', 'Gestión del curso'],
+          ['3S.14.02', 'Proyectos individuales'],
+        ])
+        for (const folder of children) {
+          expect(folder.children?.map((child) => child.name)).toEqual(CARRERAS_DOCENCIA)
+        }
         continue
       }
 

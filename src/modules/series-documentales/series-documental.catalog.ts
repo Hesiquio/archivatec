@@ -86,6 +86,12 @@ export function obtenerSubdireccionPorCodigo(codigo: string): SubdireccionSerie 
 }
 
 export function obtenerCarreraDocenciaPorCodigo(codigo: string): string | undefined {
+  const gestionMatch = codigo.match(/^3S\.14\.(01|02)\.(\d{2})$/)
+  if (gestionMatch) {
+    const index = Number(gestionMatch[2]) - 1
+    return CARRERAS_DOCENCIA[index]
+  }
+
   const match = codigo.match(/^(3S\.\d{2})\.(\d{2})$/)
   if (!match || !SERIES_DOCENCIA_CON_CARRERAS.has(match[1])) return undefined
 

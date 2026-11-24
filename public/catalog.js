@@ -27,7 +27,8 @@ const SUBDIRECCIONES_CON_CATALOGO_ACOTADO = new Set([
 
 const NOMBRES_POR_SUBDIRECCION = {
   'Subdirección Académica de Investigación e Innovación': {
-    '3S.14.01': 'Proyectos individuales',
+    '3S.14.01': 'Gestión del curso',
+    '3S.14.02': 'Proyectos individuales',
   },
   'Subdirección Administrativa': {
     '2C.03.01': 'administrativo',
@@ -79,12 +80,27 @@ function subseriesCarreras(codigoSerie, primerIndice = 1) {
   }))
 }
 
+function subseriesCarrerasAnidadas(codigoCarpeta) {
+  return CARRERAS_DOCENCIA.map((nombre, index) => ({
+    code: `${codigoCarpeta}.${String(index + 1).padStart(2, '0')}`,
+    name: nombre,
+  }))
+}
+
 function subseriesDocencia(codigoSerie) {
   if (!SERIES_DOCENCIA_CON_CARRERAS.has(codigoSerie)) return []
   if (codigoSerie === '3S.14') {
     return [
-      { code: '3S.14.01', name: 'Proyectos Individuales' },
-      ...subseriesCarreras('3S.14', 2),
+      {
+        code: '3S.14.01',
+        name: 'Gestión del curso',
+        children: subseriesCarrerasAnidadas('3S.14.01'),
+      },
+      {
+        code: '3S.14.02',
+        name: 'Proyectos individuales',
+        children: subseriesCarrerasAnidadas('3S.14.02'),
+      },
     ]
   }
   return subseriesCarreras(codigoSerie)
